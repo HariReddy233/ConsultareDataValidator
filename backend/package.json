@@ -1,0 +1,28 @@
+{
+  "name": "sap-data-validator",
+  "version": "1.0.0",
+  "description": "Node.js Express backend for SAP data validation with PostgreSQL",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^4.21.2",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "express",
+    "postgresql",
+    "sap",
+    "api"
+  ],
+  "author": "",
+  "license": "ISC"
+}
