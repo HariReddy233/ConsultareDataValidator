@@ -47,7 +47,7 @@ const handleDatabaseError = (err, res) => {
 app.get('/sap_bp_master_instructions', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT 
+      SELECT DISTINCT
         sap_field_name, db_field_name, description, data_type, 
         field_length, is_mandatory, valid_values, related_table
       FROM "sap_bpmaster_instructions"
@@ -217,20 +217,116 @@ app.get('/instructions/:category', async (req, res) => {
     // Map category to table name
     const categoryMap = {
       'BusinessPartnerMasterData': 'sap_bpmaster_instructions',
-      'ItemMasterData': 'sap_bpmaster_instructions',
+      'ItemMasterData': 'Item_field_instructions',
       'FinancialData': 'sap_bpmaster_instructions',
       'SetupData': 'sap_bpmaster_instructions'
     };
     
     const tableName = categoryMap[category] || 'sap_bpmaster_instructions';
     
-    const result = await pool.query(`
-      SELECT 
-        sap_field_name, db_field_name, description, data_type, 
-        field_length, is_mandatory, valid_values, related_table
-      FROM "${tableName}"
-      ORDER BY sap_field_name
+    console.log(`Fetching instructions for category: ${category}, table: ${tableName}`);
+    
+    // First, let's check if the table exists
+    const tableCheck = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name ILIKE '%item%field%instructions%'
     `);
+    
+    console.log('Available tables with item field instructions:', tableCheck.rows);
+    
+    // Check the structure of the table
+    if (tableCheck.rows.length > 0) {
+      const tableName = tableCheck.rows[0].table_name;
+      const columnCheck = await pool.query(`
+        SELECT column_name, data_type 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = '${tableName}'
+        ORDER BY ordinal_position
+      `);
+      console.log(`Columns in ${tableName}:`, columnCheck.rows);
+    }
+    
+    let result;
+    try {
+      if (category === 'ItemMasterData') {
+        // Use different column names for Item_field_instructions table
+        result = await pool.query(`
+          SELECT DISTINCT
+            field_name as sap_field_name,
+            field_name as db_field_name,
+            '' as description,
+            data_type, 
+            field_length, 
+            is_mandatory, 
+            '' as valid_values, 
+            '' as related_table
+          FROM "${tableName}"
+          ORDER BY field_name
+        `);
+      } else {
+        // Use standard column names for other tables
+        result = await pool.query(`
+          SELECT DISTINCT
+            sap_field_name, db_field_name, description, data_type, 
+            field_length, is_mandatory, valid_values, related_table
+          FROM "${tableName}"
+          ORDER BY sap_field_name
+        `);
+      }
+    } catch (tableError) {
+      console.log(`Failed with table name "${tableName}", trying alternatives...`);
+      
+      // Try alternative table names
+      const alternatives = [
+        'Item_field_instructions',
+        'item_field_instructions', 
+        'Item_Field_Instructions',
+        'ITEM_FIELD_INSTRUCTIONS'
+      ];
+      
+      let found = false;
+      for (const altTable of alternatives) {
+        try {
+          console.log(`Trying table name: ${altTable}`);
+          if (category === 'ItemMasterData') {
+            result = await pool.query(`
+              SELECT DISTINCT
+                field_name as sap_field_name,
+                field_name as db_field_name,
+                '' as description,
+                data_type, 
+                field_length, 
+                is_mandatory, 
+                '' as valid_values, 
+                '' as related_table
+              FROM "${altTable}"
+              ORDER BY field_name
+            `);
+          } else {
+            result = await pool.query(`
+              SELECT DISTINCT
+                sap_field_name, db_field_name, description, data_type, 
+                field_length, is_mandatory, valid_values, related_table
+              FROM "${altTable}"
+              ORDER BY sap_field_name
+            `);
+          }
+          console.log(`Success with table name: ${altTable}`);
+          found = true;
+          break;
+        } catch (altError) {
+          console.log(`Failed with table name: ${altTable}`);
+          continue;
+        }
+      }
+      
+      if (!found) {
+        throw tableError; // Throw the original error if no alternative worked
+      }
+    }
     
     // Transform data to match expected format
     const fields = result.rows.map(row => ({
@@ -250,6 +346,7 @@ app.get('/instructions/:category', async (req, res) => {
       fields: fields
     });
   } catch (err) {
+    console.error(`Error fetching instructions for category ${req.params.category}:`, err);
     handleDatabaseError(err, res);
   }
 });
@@ -260,14 +357,84 @@ app.post('/validate/:category', async (req, res) => {
     const { category } = req.params;
     const { data } = req.body; // Excel data will be sent from frontend
     
+    // Map category to table name
+    const categoryMap = {
+      'BusinessPartnerMasterData': 'sap_bpmaster_instructions',
+      'ItemMasterData': 'Item_field_instructions',
+      'FinancialData': 'sap_bpmaster_instructions',
+      'SetupData': 'sap_bpmaster_instructions'
+    };
+    
+    const tableName = categoryMap[category] || 'sap_bpmaster_instructions';
+    
     // Get validation rules for the category
-    const instructionsResult = await pool.query(`
-      SELECT 
-        sap_field_name, db_field_name, description, data_type, 
-        field_length, is_mandatory, valid_values, related_table
-      FROM "sap_bpmaster_instructions"
-      ORDER BY sap_field_name
-    `);
+    let instructionsResult;
+    try {
+      if (category === 'ItemMasterData') {
+        // Use different column names for Item_field_instructions table
+        instructionsResult = await pool.query(`
+          SELECT DISTINCT
+            field_name as sap_field_name,
+            field_name as db_field_name,
+            '' as description,
+            data_type, 
+            field_length, 
+            is_mandatory, 
+            '' as valid_values, 
+            '' as related_table
+          FROM "${tableName}"
+          ORDER BY field_name
+        `);
+      } else {
+        // Use standard column names for other tables
+        instructionsResult = await pool.query(`
+          SELECT DISTINCT
+            sap_field_name, db_field_name, description, data_type, 
+            field_length, is_mandatory, valid_values, related_table
+          FROM "${tableName}"
+          ORDER BY sap_field_name
+        `);
+      }
+    } catch (tableError) {
+      // Try alternative table names for Item Master Data
+      if (category === 'ItemMasterData') {
+        const alternatives = [
+          'Item_field_instructions',
+          'item_field_instructions', 
+          'Item_Field_Instructions',
+          'ITEM_FIELD_INSTRUCTIONS'
+        ];
+        
+        let found = false;
+        for (const altTable of alternatives) {
+          try {
+            instructionsResult = await pool.query(`
+              SELECT DISTINCT
+                field_name as sap_field_name,
+                field_name as db_field_name,
+                '' as description,
+                data_type, 
+                field_length, 
+                is_mandatory, 
+                '' as valid_values, 
+                '' as related_table
+              FROM "${altTable}"
+              ORDER BY field_name
+            `);
+            found = true;
+            break;
+          } catch (altError) {
+            continue;
+          }
+        }
+        
+        if (!found) {
+          throw tableError;
+        }
+      } else {
+        throw tableError;
+      }
+    }
     
     const validationRules = instructionsResult.rows.map(row => ({
       sapFile: row.sap_field_name,
@@ -351,14 +518,84 @@ app.get('/download-sample/:category', async (req, res) => {
   try {
     const { category } = req.params;
     
+    // Map category to table name
+    const categoryMap = {
+      'BusinessPartnerMasterData': 'sap_bpmaster_instructions',
+      'ItemMasterData': 'Item_field_instructions',
+      'FinancialData': 'sap_bpmaster_instructions',
+      'SetupData': 'sap_bpmaster_instructions'
+    };
+    
+    const tableName = categoryMap[category] || 'sap_bpmaster_instructions';
+    
     // Get validation rules
-    const instructionsResult = await pool.query(`
-      SELECT 
-        sap_field_name, db_field_name, description, data_type, 
-        field_length, is_mandatory, valid_values, related_table
-      FROM "sap_bpmaster_instructions"
-      ORDER BY sap_field_name
-    `);
+    let instructionsResult;
+    try {
+      if (category === 'ItemMasterData') {
+        // Use different column names for Item_field_instructions table
+        instructionsResult = await pool.query(`
+          SELECT DISTINCT
+            field_name as sap_field_name,
+            field_name as db_field_name,
+            '' as description,
+            data_type, 
+            field_length, 
+            is_mandatory, 
+            '' as valid_values, 
+            '' as related_table
+          FROM "${tableName}"
+          ORDER BY field_name
+        `);
+      } else {
+        // Use standard column names for other tables
+        instructionsResult = await pool.query(`
+          SELECT DISTINCT
+            sap_field_name, db_field_name, description, data_type, 
+            field_length, is_mandatory, valid_values, related_table
+          FROM "${tableName}"
+          ORDER BY sap_field_name
+        `);
+      }
+    } catch (tableError) {
+      // Try alternative table names for Item Master Data
+      if (category === 'ItemMasterData') {
+        const alternatives = [
+          'Item_field_instructions',
+          'item_field_instructions', 
+          'Item_Field_Instructions',
+          'ITEM_FIELD_INSTRUCTIONS'
+        ];
+        
+        let found = false;
+        for (const altTable of alternatives) {
+          try {
+            instructionsResult = await pool.query(`
+              SELECT DISTINCT
+                field_name as sap_field_name,
+                field_name as db_field_name,
+                '' as description,
+                data_type, 
+                field_length, 
+                is_mandatory, 
+                '' as valid_values, 
+                '' as related_table
+              FROM "${altTable}"
+              ORDER BY field_name
+            `);
+            found = true;
+            break;
+          } catch (altError) {
+            continue;
+          }
+        }
+        
+        if (!found) {
+          throw tableError;
+        }
+      } else {
+        throw tableError;
+      }
+    }
     
     const fields = instructionsResult.rows.map(row => ({
       sapFile: row.sap_field_name,
@@ -401,6 +638,26 @@ app.get('/download-sample/:category', async (req, res) => {
   }
 });
 
+// Debug endpoint to check table names
+app.get('/debug/tables', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND (table_name ILIKE '%item%' OR table_name ILIKE '%instruction%')
+      ORDER BY table_name
+    `);
+    
+    res.status(200).json({
+      success: true,
+      tables: result.rows.map(row => row.table_name)
+    });
+  } catch (err) {
+    handleDatabaseError(err, res);
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -431,6 +688,7 @@ app.listen(PORT, () => {
   console.log(`  GET    /instructions/:category`);
   console.log(`  POST   /validate/:category`);
   console.log(`  GET    /download-sample/:category`);
+  console.log(`  GET    /debug/tables`);
 });
 
 // Graceful shutdown

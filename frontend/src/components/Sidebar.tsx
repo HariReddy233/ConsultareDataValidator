@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Users, 
   Package, 
-  TrendingUp, 
+  Calculator, 
   Database, 
   Settings 
 } from 'lucide-react';
@@ -17,37 +17,48 @@ const menuItems = [
   {
     id: 'BusinessPartnerMasterData' as DataCategory,
     label: 'Business Partner Master Data',
+    description: 'Customer and vendor data validation',
     icon: Users,
   },
   {
     id: 'ItemMasterData' as DataCategory,
     label: 'Item Master Data',
+    description: 'Product and service item validation',
     icon: Package,
   },
   {
     id: 'FinancialData' as DataCategory,
     label: 'Financial Data',
-    icon: TrendingUp,
+    description: 'Accounting and financial validation',
+    icon: Calculator,
   },
   {
     id: 'SetupData' as DataCategory,
     label: 'Set Up Data',
+    description: 'System configuration validation',
     icon: Database,
   },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange }) => {
   return (
-    <div className="w-64 bg-blue-900 text-white flex flex-col">
+    <div className="w-72 bg-sap-blue-900 text-white flex flex-col shadow-lg">
       {/* Header */}
-      <div className="p-6 border-b border-blue-800">
-        <h1 className="text-xl font-bold">SAP B1 Data Validation</h1>
-        <p className="text-sm text-blue-200 mt-1">Master Data Management</p>
+      <div className="p-6 border-b border-sap-blue-800">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+            <span className="text-sap-blue-900 font-bold text-sm">SAP</span>
+          </div>
+          <div>
+            <h1 className="text-xl font-bold">Data Validator</h1>
+            <p className="text-sm text-sap-blue-200">Master Data Management</p>
+          </div>
+        </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-4">
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = selectedCategory === item.id;
@@ -56,14 +67,23 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange })
               <li key={item.id}>
                 <button
                   onClick={() => onCategoryChange(item.id)}
-                  className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-colors ${
+                  className={`w-full flex items-start px-4 py-4 rounded-lg text-left transition-all duration-200 group ${
                     isActive
-                      ? 'bg-blue-700 text-white'
-                      : 'text-blue-200 hover:bg-blue-800 hover:text-white'
+                      ? 'bg-sap-primary text-white shadow-md'
+                      : 'text-sap-blue-200 hover:bg-sap-blue-800 hover:text-white'
                   }`}
                 >
-                  <Icon className="w-5 h-5 mr-3" />
-                  <span className="font-medium">{item.label}</span>
+                  <Icon className={`w-5 h-5 mr-3 mt-0.5 flex-shrink-0 ${
+                    isActive ? 'text-white' : 'text-sap-blue-300 group-hover:text-white'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm">{item.label}</div>
+                    <div className={`text-xs mt-1 ${
+                      isActive ? 'text-sap-blue-100' : 'text-sap-blue-300 group-hover:text-sap-blue-100'
+                    }`}>
+                      {item.description}
+                    </div>
+                  </div>
                 </button>
               </li>
             );
@@ -72,9 +92,9 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange })
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-blue-800">
-        <button className="w-full flex items-center px-4 py-3 rounded-lg text-blue-200 hover:bg-blue-800 hover:text-white transition-colors">
-          <Settings className="w-5 h-5 mr-3" />
+      <div className="p-4 border-t border-sap-blue-800">
+        <button className="w-full flex items-center px-4 py-3 rounded-lg text-sap-blue-200 hover:bg-sap-blue-800 hover:text-white transition-colors group">
+          <Settings className="w-5 h-5 mr-3 group-hover:text-white" />
           <span className="font-medium">Settings</span>
         </button>
       </div>
