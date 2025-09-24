@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, X, CheckCircle } from 'lucide-react';
-import { Button } from './ui/Button';
-import { Card, CardContent } from './ui/Card';
-import { Badge } from './ui/Badge';
+import { Button } from '../ui/Button';
+import { Card, CardContent } from '../ui/Card';
+import { Badge } from '../ui/Badge';
 import * as XLSX from 'xlsx';
 
 interface FileUploadProps {

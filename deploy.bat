@@ -1,8 +1,8 @@
 @echo off
-REM SAP Data Validator Deployment Script for Windows
+REM Consultare Data Validator Deployment Script for Windows
 REM Run this script on your Linode server
 
-echo 🚀 Starting SAP Data Validator Deployment...
+echo 🚀 Starting Consultare Data Validator Deployment...
 
 REM Get server IP (you'll need to replace this with your actual IP)
 set SERVER_IP=YOUR_SERVER_IP_HERE

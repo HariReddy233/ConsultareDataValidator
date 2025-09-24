@@ -1,11 +1,10 @@
 import { ValidationResponse, InstructionsResponse, SampleDataResponse } from '../types';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002';
+import { API_BASE_URL, API_ENDPOINTS } from '../constants/api';
 
 export const api = {
   // Get validation instructions for a category
   getInstructions: async (category: string): Promise<InstructionsResponse> => {
-    const response = await fetch(`${API_BASE_URL}/instructions/${category}`);
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.CATEGORY.INSTRUCTIONS(category)}`);
     if (!response.ok) {
       throw new Error('Failed to fetch instructions');
     }
@@ -14,7 +13,7 @@ export const api = {
 
   // Validate uploaded data
   validateData: async (category: string, data: any[]): Promise<ValidationResponse> => {
-    const response = await fetch(`${API_BASE_URL}/validate/${category}`, {
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.CATEGORY.VALIDATE(category)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -29,7 +28,7 @@ export const api = {
 
   // Download sample file
   getSampleData: async (category: string): Promise<SampleDataResponse> => {
-    const response = await fetch(`${API_BASE_URL}/download-sample/${category}`);
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.CATEGORY.SAMPLE(category)}`);
     if (!response.ok) {
       throw new Error('Failed to fetch sample data');
     }

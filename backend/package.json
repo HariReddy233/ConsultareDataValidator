@@ -1,7 +1,7 @@
 {
-  "name": "sap-data-validator",
+  "name": "consultare-data-validator",
   "version": "1.0.0",
-  "description": "Node.js Express backend for SAP data validation with PostgreSQL",
+  "description": "Node.js Express backend for Consultare data validation with PostgreSQL",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -20,7 +20,7 @@
   "keywords": [
     "express",
     "postgresql",
-    "sap",
+    "consultare",
     "api"
   ],
   "author": "",

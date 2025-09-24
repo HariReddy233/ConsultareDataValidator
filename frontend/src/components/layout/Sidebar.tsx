@@ -3,10 +3,9 @@ import {
   Users, 
   Package, 
   Calculator, 
-  Database, 
-  Settings 
+  Database
 } from 'lucide-react';
-import { DataCategory } from '../types';
+import { DataCategory } from '../../types';
 
 interface SidebarProps {
   selectedCategory: DataCategory;
@@ -47,11 +46,11 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange })
       <div className="p-6 border-b border-sap-blue-800">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-            <span className="text-sap-blue-900 font-bold text-sm">SAP</span>
+            <span className="text-sap-blue-900 font-bold text-lg">C</span>
           </div>
           <div>
-            <h1 className="text-xl font-bold">Data Validator</h1>
-            <p className="text-sm text-sap-blue-200">Master Data Management</p>
+            <h1 className="text-xl font-bold">Consultare</h1>
+            <p className="text-[10px] text-sap-blue-200">Master Data Management</p>
           </div>
         </div>
       </div>
@@ -93,10 +92,9 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange })
 
       {/* Footer */}
       <div className="p-4 border-t border-sap-blue-800">
-        <button className="w-full flex items-center px-4 py-3 rounded-lg text-sap-blue-200 hover:bg-sap-blue-800 hover:text-white transition-colors group">
-          <Settings className="w-5 h-5 mr-3 group-hover:text-white" />
-          <span className="font-medium">Settings</span>
-        </button>
+        <div className="text-xs text-sap-blue-300 text-center">
+          © 2024 Consultare. All rights reserved.
+        </div>
       </div>
     </div>
   );

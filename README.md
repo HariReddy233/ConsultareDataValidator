@@ -1,11 +1,11 @@
-# SAP B1 Data Validation System
+# Consultare Data Validation System
 
-A comprehensive full-stack application for validating SAP Business One data using React, Node.js, and PostgreSQL.
+A comprehensive full-stack application for validating business data using React, Node.js, and PostgreSQL.
 
 ## 🚀 Features
 
 ### Backend (Node.js + PostgreSQL)
-- **CRUD APIs** for SAP BP Master Instructions
+- **CRUD APIs** for Business Partner Master Instructions
 - **Validation Engine** with configurable business rules
 - **Excel Processing** with comprehensive field validation
 - **Sample File Generation** for each data category
@@ -133,7 +133,7 @@ The system validates data based on configurable rules:
 ## 📁 Project Structure
 
 ```
-sap_data_validator/
+consultare_data_validator/
 ├── index.js                 # Backend server
 ├── package.json            # Backend dependencies
 ├── .env                    # Environment variables

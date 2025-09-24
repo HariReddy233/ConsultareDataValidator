@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ValidationResponse, ValidationResult } from '../types';
-import { Card, CardContent } from './ui/Card';
-import { Badge } from './ui/Badge';
-import { Button } from './ui/Button';
+import { ValidationResponse, ValidationResult } from '../../types';
+import { Card, CardContent } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
 import { ChevronLeft, ChevronRight, AlertTriangle, CheckCircle, XCircle, Filter } from 'lucide-react';
 
 interface ValidationResultsProps {

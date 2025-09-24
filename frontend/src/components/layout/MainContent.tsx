@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { DataCategory, ValidationResponse, ValidationResult } from '../types';
-import { api } from '../services/api';
-import FileUpload from './FileUpload';
-import ValidationResults from './ValidationResults';
-import FieldInstructions from './FieldInstructions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/Card';
-import { Badge } from './ui/Badge';
-import { Progress } from './ui/Progress';
-import { Button } from './ui/Button';
+import { DataCategory, ValidationResponse, ValidationResult } from '../../types';
+import { api } from '../../services/api';
+import FileUpload from '../forms/FileUpload';
+import ValidationResults from '../display/ValidationResults';
+import FieldInstructions from '../display/FieldInstructions';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { Progress } from '../ui/Progress';
+import { Button } from '../ui/Button';
 import { Upload, Download, FileText, AlertTriangle, CheckCircle, AlertCircle, XCircle, Filter } from 'lucide-react';
 
 interface MainContentProps {
@@ -40,15 +40,15 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
   const getCategoryDescription = (category: DataCategory) => {
     switch (category) {
       case 'BusinessPartnerMasterData':
-        return 'Upload and validate customer and vendor data with comprehensive field validation.';
+        return 'Upload for comprehensive field validation.';
       case 'ItemMasterData':
-        return 'Upload and validate product and service item data with field validation.';
+        return 'Upload for comprehensive field validation.';
       case 'FinancialData':
-        return 'Upload and validate accounting and financial data with field validation.';
+        return 'Upload for comprehensive field validation.';
       case 'SetupData':
-        return 'Upload and validate system configuration data with field validation.';
+        return 'Upload for comprehensive field validation.';
       default:
-        return 'Upload and validate data with comprehensive field validation.';
+        return 'Upload for comprehensive field validation.';
     }
   };
 
@@ -126,10 +126,10 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-xl font-bold text-gray-900">
               {getCategoryTitle(category)}
             </h1>
-            <p className="text-gray-600 mt-2 text-lg">
+            <p className="text-gray-600 mt-2 text-sm">
               {getCategoryDescription(category)}
             </p>
           </div>
