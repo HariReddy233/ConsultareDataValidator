@@ -128,6 +128,52 @@ class Instruction {
     `);
     return result.rows.map(row => row.table_name);
   }
+
+  // Create instruction by category
+  static async createByCategory(category, instructionData) {
+    const {
+      sap_field_name, db_field_name, description, data_type, 
+      field_length, is_mandatory, valid_values, related_table
+    } = instructionData;
+    
+    const categoryMap = {
+      'BusinessPartnerMasterData': 'sap_bpmaster_instructions',
+      'ItemMasterData': 'item_field_instructions',
+      'FinancialData': 'sap_bpmaster_instructions',
+      'SetupData': 'sap_bpmaster_instructions'
+    };
+    
+    const tableName = categoryMap[category] || 'sap_bpmaster_instructions';
+    
+    let result;
+    if (category === 'ItemMasterData') {
+      // Use different column names for Item_field_instructions table
+      result = await pool.query(`
+        INSERT INTO "${tableName}" (
+          field_name, data_type, field_length, is_mandatory
+        ) VALUES (
+          $1, $2, $3, $4
+        ) RETURNING *
+      `, [
+        sap_field_name, data_type, field_length, is_mandatory ? 'Y' : 'N'
+      ]);
+    } else {
+      // Use standard column names for other tables
+      result = await pool.query(`
+        INSERT INTO "${tableName}" (
+          sap_field_name, db_field_name, description, data_type, 
+          field_length, is_mandatory, valid_values, related_table
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8
+        ) RETURNING *
+      `, [
+        sap_field_name, db_field_name, description, data_type, 
+        field_length, is_mandatory ? 'Y' : 'N', valid_values, related_table
+      ]);
+    }
+    
+    return result.rows[0];
+  }
 }
 
 module.exports = Instruction;

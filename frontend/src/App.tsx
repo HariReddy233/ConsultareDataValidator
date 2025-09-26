@@ -9,7 +9,7 @@ function App() {
 
   return (
     <ValidationProvider>
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-gray-50 overflow-hidden">
         <Sidebar 
           selectedCategory={selectedCategory} 
           onCategoryChange={setSelectedCategory} 

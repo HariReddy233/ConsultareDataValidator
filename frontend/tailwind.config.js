@@ -24,6 +24,7 @@ module.exports = {
         'sap-success': 'hsl(142 71% 45%)',
         'sap-warning': 'hsl(38 92% 50%)',
         'sap-error': 'hsl(0 84% 60%)',
+        'sap-white-800': '#374151',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

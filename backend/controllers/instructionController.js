@@ -273,6 +273,65 @@ class InstructionController {
       handleDatabaseError(err, res);
     }
   }
+
+  // POST /instructions/:category - Create new field instruction for a category
+  static async createFieldInstructionByCategory(req, res) {
+    try {
+      const { category } = req.params;
+      const {
+        sap_field_name, db_field_name, description, data_type, 
+        field_length, is_mandatory, valid_values, related_table
+      } = req.body;
+      
+      // Validate required fields
+      if (!sap_field_name) {
+        return res.status(400).json({
+          success: false,
+          message: 'sap_field_name is required'
+        });
+      }
+      
+      if (!db_field_name) {
+        return res.status(400).json({
+          success: false,
+          message: 'db_field_name is required'
+        });
+      }
+
+      if (!data_type) {
+        return res.status(400).json({
+          success: false,
+          message: 'data_type is required'
+        });
+      }
+
+      if (!field_length) {
+        return res.status(400).json({
+          success: false,
+          message: 'field_length is required'
+        });
+      }
+      
+      const instruction = await Instruction.createByCategory(category, {
+        sap_field_name, db_field_name, description, data_type, 
+        field_length, is_mandatory, valid_values, related_table
+      });
+      
+      res.status(201).json({
+        success: true,
+        message: 'Field instruction created successfully',
+        data: instruction
+      });
+    } catch (err) {
+      if (err.code === '23505') { // Unique constraint violation
+        return res.status(409).json({
+          success: false,
+          message: 'Instruction with this SAP Field Name already exists'
+        });
+      }
+      handleDatabaseError(err, res);
+    }
+  }
 }
 
 module.exports = InstructionController;

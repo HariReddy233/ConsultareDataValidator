@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ValidationResponse, ValidationResult } from '../../types';
 import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -7,23 +7,28 @@ import { ChevronLeft, ChevronRight, AlertTriangle, CheckCircle, XCircle, Filter 
 
 interface ValidationResultsProps {
   results: ValidationResponse;
+  statusFilter?: string;
 }
 
-const ValidationResults: React.FC<ValidationResultsProps> = ({ results }) => {
+const ValidationResults: React.FC<ValidationResultsProps> = ({ results, statusFilter = 'all' }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const totalPages = Math.ceil(results.results.length / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = startIndex + rowsPerPage;
-  
   // Filter results based on status
   const filteredResults = results.results.filter(result => 
     statusFilter === 'all' || result.status.toLowerCase() === statusFilter
   );
   
+  const totalPages = Math.ceil(filteredResults.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  
   const currentResults = filteredResults.slice(startIndex, endIndex);
+
+  // Reset to first page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { DataCategory, ValidationResponse, ValidationResult } from '../../types';
+import React, { useState, useRef } from 'react';
+import { DataCategory, ValidationResponse } from '../../types';
 import { api } from '../../services/api';
-import FileUpload from '../forms/FileUpload';
 import ValidationResults from '../display/ValidationResults';
 import FieldInstructions from '../display/FieldInstructions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card';
+import AddFieldInstructionForm from '../forms/AddFieldInstructionForm';
+import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { Progress } from '../ui/Progress';
 import { Button } from '../ui/Button';
-import { Upload, Download, FileText, AlertTriangle, CheckCircle, AlertCircle, XCircle, Filter } from 'lucide-react';
+import { Upload, Download, FileText, CheckCircle, AlertCircle, XCircle, Filter } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface MainContentProps {
   category: DataCategory;
@@ -17,10 +17,13 @@ interface MainContentProps {
 const MainContent: React.FC<MainContentProps> = ({ category }) => {
   const [activeTab, setActiveTab] = useState<'upload' | 'instructions'>('upload');
   const [validationResults, setValidationResults] = useState<ValidationResponse | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [fileData, setFileData] = useState<any[]>([]);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [selectedDataCategory, setSelectedDataCategory] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showAddForm, setShowAddForm] = useState<boolean>(false);
+  const [refreshInstructions, setRefreshInstructions] = useState<number>(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getCategoryTitle = (category: DataCategory) => {
     switch (category) {
@@ -52,40 +55,91 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
     }
   };
 
-  const handleFileUpload = async (data: any[], file: File) => {
-    setFileData(data);
-    setUploadedFile(file);
-    setIsProcessing(true);
-    setProgress(0);
-
-    try {
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 200);
-
-      const result = await api.validateData(category, data);
-      
-      clearInterval(progressInterval);
-      setProgress(100);
-      
-      setTimeout(() => {
-        setValidationResults(result);
-        setIsProcessing(false);
-        setProgress(0);
-      }, 500);
-    } catch (error) {
-      console.error('Validation failed:', error);
-      setIsProcessing(false);
-      setProgress(0);
+  const getDataCategoryOptions = (category: DataCategory) => {
+    switch (category) {
+      case 'BusinessPartnerMasterData':
+        return [
+          'General Info',
+          'Address',
+          'Tax Info',
+          'Contact Person',
+          'State Code',
+          'Group Code'
+        ];
+      case 'ItemMasterData':
+        return [
+          'Item Details',
+          'Pricing',
+          'Inventory',
+          'Categories',
+          'Specifications'
+        ];
+      case 'FinancialData':
+        return [
+          'Chart of Accounts',
+          'GL Accounts',
+          'Cost Centers',
+          'Profit Centers'
+        ];
+      case 'SetupData':
+        return [
+          'Company Settings',
+          'User Management',
+          'System Configuration',
+          'Integration Settings'
+        ];
+      default:
+        return [];
     }
   };
+
+  const handleFileUpload = async (data: any[], file: File) => {
+    console.log('handleFileUpload called with:', { dataLength: data.length, fileName: file.name });
+    setFileData(data);
+    setUploadedFile(file);
+
+    try {
+      console.log('Calling API validation for category:', category);
+      const result = await api.validateData(category, data);
+      console.log('Validation result:', result);
+      setValidationResults(result);
+    } catch (error) {
+      console.error('Validation failed:', error);
+    }
+  };
+
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('File input changed');
+    const file = event.target.files?.[0];
+    console.log('Selected file:', file);
+    if (file) {
+      console.log('Processing file:', file.name, file.type, file.size);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          console.log('File read successfully');
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          console.log('Parsed data:', jsonData);
+          
+          handleFileUpload(jsonData, file);
+        } catch (error) {
+          console.error('Error reading file:', error);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  };
+
+  const handleUploadClick = () => {
+    console.log('Upload button clicked');
+    console.log('File input ref:', fileInputRef.current);
+    fileInputRef.current?.click();
+  };
+
 
   const handleDownloadTemplate = async () => {
     try {
@@ -107,23 +161,11 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Valid':
-        return <Badge variant="success">Valid</Badge>;
-      case 'Warning':
-        return <Badge variant="warning">Warning</Badge>;
-      case 'Error':
-        return <Badge variant="error">Error</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50">
+    <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-6 shadow-sm">
+      <div className="bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900">
@@ -134,86 +176,63 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
             </p>
           </div>
           
+          {/* Data Category Dropdown */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Choose Data Catgory:</label>
+              <select
+                value={selectedDataCategory}
+                onChange={(e) => setSelectedDataCategory(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select Category</option>
+                {getDataCategoryOptions(category).map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
           {/* Action Buttons */}
           <div className="flex gap-3">
             <Button 
-              className="flex items-center gap-2 bg-sap-primary hover:bg-sap-primary/90 text-white px-6 py-3"
-              onClick={() => document.getElementById('file-upload')?.click()}
+              className="flex items-center gap-2 bg-sap-primary hover:bg-sap-primary/90 text-white px-4 py-2"
+              onClick={handleUploadClick}
             >
-              <Upload className="w-5 h-5" />
-              Upload File
+              <Upload className="w-4 h-4" />
+              Upload
             </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleFileInputChange}
+              className="hidden"
+            />
             <Button 
               variant="outline" 
-              className="flex items-center gap-2 border-gray-300 hover:bg-gray-50 px-6 py-3"
+              className="flex items-center gap-2 border-gray-300 hover:bg-gray-50 px-4 py-2"
               onClick={handleDownloadTemplate}
             >
-              <Download className="w-5 h-5" />
-              Download Template
+              <Download className="w-4 h-4" />
+              Template
             </Button>
             <Button 
               variant="outline" 
-              className="flex items-center gap-2 bg-sap-success/10 text-sap-success border-sap-success/20 hover:bg-sap-success/20 px-6 py-3"
+              className="flex items-center gap-2 bg-sap-success/10 text-sap-success border-sap-success/20 hover:bg-sap-success/20 px-4 py-2"
               onClick={handleDownloadSample}
             >
-              <FileText className="w-5 h-5" />
-              Download Sample File
+              <FileText className="w-4 h-4" />
+              Sample
             </Button>
           </div>
         </div>
+        
+        {/* Horizontal Line */}
+        <div className="mt-4 border-t border-gray-300"></div>
 
-        {/* Status Summary Cards */}
-        {validationResults && (
-          <div className="mt-6 grid grid-cols-4 gap-4">
-            <Card className="bg-white border-l-4 border-l-sap-success">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Records</p>
-                    <p className="text-2xl font-bold text-gray-900">{validationResults.summary.total}</p>
-                  </div>
-                  <CheckCircle className="w-8 h-8 text-sap-success" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-white border-l-4 border-l-sap-success">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Valid</p>
-                    <p className="text-2xl font-bold text-sap-success">{validationResults.summary.valid}</p>
-                  </div>
-                  <CheckCircle className="w-8 h-8 text-sap-success" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-white border-l-4 border-l-sap-warning">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Warnings</p>
-                    <p className="text-2xl font-bold text-sap-warning">{validationResults.summary.warnings}</p>
-                  </div>
-                  <AlertCircle className="w-8 h-8 text-sap-warning" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-white border-l-4 border-l-sap-error">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Errors</p>
-                    <p className="text-2xl font-bold text-sap-error">{validationResults.summary.errors}</p>
-                  </div>
-                  <XCircle className="w-8 h-8 text-sap-error" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* File Upload Status */}
         {uploadedFile && (
@@ -229,59 +248,72 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="mt-6 flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-          <button
-            onClick={() => setActiveTab('upload')}
-            className={`px-6 py-3 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'upload'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Customer Data
-          </button>
-          <button
-            onClick={() => setActiveTab('instructions')}
-            className={`px-6 py-3 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'instructions'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Field Instructions
-          </button>
+        {/* Tabs and Validation Summary */}
+        <div className="mt-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+              <button
+                onClick={() => setActiveTab('upload')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  activeTab === 'upload'
+                    ? 'bg-blue-900 text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-blue-800 hover:text-white'
+                }`}
+              >
+                Customer Data
+              </button>
+              <button
+                onClick={() => setActiveTab('instructions')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  activeTab === 'instructions'
+                    ? 'bg-blue-900 text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-blue-800 hover:text-white'
+                }`}
+              >
+                Field Instructions
+              </button>
+            </div>
+            
+            {/* Add Field Instructions Button - only show when on instructions tab */}
+            {activeTab === 'instructions' && (
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white text-gray-600 hover:bg-blue-800 hover:text-white border border-gray-300 hover:border-blue-800 flex items-center gap-2"
+              >
+                <Upload className="w-3 h-3" />
+                Add Field Instructions
+              </button>
+            )}
+          </div>
+          
+          {/* Validation Summary */}
+          {validationResults && (
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Total Records:</span>
+                <span className="font-semibold text-gray-900">{validationResults.summary.total}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-green-600">Valid:</span>
+                <span className="font-semibold text-green-600">{validationResults.summary.valid}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-yellow-600">Warnings:</span>
+                <span className="font-semibold text-yellow-600">{validationResults.summary.warnings}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-red-600">Errors:</span>
+                <span className="font-semibold text-red-600">{validationResults.summary.errors}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-6">
-        {isProcessing && (
-          <Card className="mb-6 border-sap-warning/20 bg-sap-warning/5">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-sap-warning">Processing...</h3>
-                  <span className="text-sm text-sap-warning font-medium">{progress}%</span>
-                </div>
-                <Progress value={progress} className="w-full" />
-                <p className="text-sm text-gray-600">
-                  Validating your data against business rules...
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
+      <div className="flex-1 p-6 overflow-hidden">
         {activeTab === 'upload' && (
           <div className="space-y-6">
-            {/* File Upload Section */}
-            <div className="flex justify-center">
-              <FileUpload 
-                onFileUpload={handleFileUpload}
-                disabled={isProcessing}
-              />
-            </div>
             
             {/* Validation Results */}
             {validationResults && (
@@ -293,7 +325,11 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
                       <Filter className="w-4 h-4 text-gray-500" />
                       <span className="text-sm font-medium text-gray-700">Filter by Status:</span>
                     </div>
-                    <select className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-sap-primary focus:border-sap-primary">
+                    <select 
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-sap-primary focus:border-sap-primary"
+                    >
                       <option value="all">All Records</option>
                       <option value="valid">Valid Only</option>
                       <option value="warning">Warnings Only</option>
@@ -303,27 +339,32 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
                   
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-gray-500">
-                      Showing 1-{Math.min(10, validationResults.results.length)} of {validationResults.results.length} records
+                      Showing {validationResults.results.length} records
                     </span>
-                    <Button 
-                      className="bg-sap-success hover:bg-sap-success/90 text-white"
-                      disabled={isProcessing}
-                    >
-                      Start Validation
-                    </Button>
                   </div>
                 </div>
                 
-                <ValidationResults results={validationResults} />
+                <ValidationResults results={validationResults} statusFilter={statusFilter} />
               </div>
             )}
           </div>
         )}
 
         {activeTab === 'instructions' && (
-          <FieldInstructions category={category} />
+          <FieldInstructions category={category} refreshTrigger={refreshInstructions} />
         )}
       </div>
+
+      {/* Add Field Instruction Form Modal */}
+      <AddFieldInstructionForm
+        category={category}
+        isOpen={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        onSuccess={() => {
+          setRefreshInstructions(prev => prev + 1);
+          setShowAddForm(false);
+        }}
+      />
     </div>
   );
 };

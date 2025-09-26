@@ -34,4 +34,20 @@ export const api = {
     }
     return response.json();
   },
+
+  // Create new field instruction
+  createFieldInstruction: async (category: string, instructionData: any): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/api/instructions/${category}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(instructionData),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to create field instruction');
+    }
+    return response.json();
+  },
 };

@@ -7,9 +7,10 @@ import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface FieldInstructionsProps {
   category: DataCategory;
+  refreshTrigger?: number;
 }
 
-const FieldInstructions: React.FC<FieldInstructionsProps> = ({ category }) => {
+const FieldInstructions: React.FC<FieldInstructionsProps> = ({ category, refreshTrigger }) => {
   const [fields, setFields] = useState<ValidationField[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +31,7 @@ const FieldInstructions: React.FC<FieldInstructionsProps> = ({ category }) => {
     };
 
     fetchInstructions();
-  }, [category]);
+  }, [category, refreshTrigger]);
 
   const getDataTypeBadge = (type: string) => {
     const typeColors = {
