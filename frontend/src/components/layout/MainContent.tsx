@@ -7,7 +7,7 @@ import AddFieldInstructionForm from '../forms/AddFieldInstructionForm';
 import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
-import { Upload, Download, FileText, CheckCircle, AlertCircle, XCircle, Filter } from 'lucide-react';
+import { Upload, Download, FileText, CheckCircle, AlertCircle, XCircle, Filter, Plus } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface MainContentProps {
@@ -183,7 +183,7 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
               <select
                 value={selectedDataCategory}
                 onChange={(e) => setSelectedDataCategory(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-48"
               >
                 <option value="">Select Category</option>
                 {getDataCategoryOptions(category).map((option) => (
@@ -273,21 +273,21 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
                 Field Instructions
               </button>
             </div>
-            
-            {/* Add Field Instructions Button - only show when on instructions tab */}
-            {activeTab === 'instructions' && (
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white text-gray-600 hover:bg-blue-800 hover:text-white border border-gray-300 hover:border-blue-800 flex items-center gap-2"
-              >
-                <Upload className="w-3 h-3" />
-                Add Field Instructions
-              </button>
-            )}
           </div>
           
-          {/* Validation Summary */}
-          {validationResults && (
+          {/* Add Row Button - only show when on instructions tab, positioned on the right */}
+          {activeTab === 'instructions' && (
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white text-gray-600 hover:bg-blue-800 hover:text-white border border-gray-300 hover:border-blue-800 flex items-center gap-2"
+            >
+              <Plus className="w-3 h-3" />
+              Add Row
+            </button>
+          )}
+          
+          {/* Validation Summary - only show when on upload tab */}
+          {activeTab === 'upload' && validationResults && (
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <span className="text-gray-600">Total Records:</span>
@@ -351,7 +351,9 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
         )}
 
         {activeTab === 'instructions' && (
-          <FieldInstructions category={category} refreshTrigger={refreshInstructions} />
+          <div className="h-full">
+            <FieldInstructions category={category} refreshTrigger={refreshInstructions} />
+          </div>
         )}
       </div>
 

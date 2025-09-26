@@ -91,113 +91,87 @@ const FieldInstructions: React.FC<FieldInstructionsProps> = ({ category, refresh
   }
 
   return (
-    <div className="space-y-6">
-      {/* Fields Table */}
-      <Card className="overflow-hidden">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
-                    SAP Field Name
-                  </th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
-                    Database Field Name
-                  </th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
-                    Data Type
-                  </th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
-                    Field Length
-                  </th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
-                    Mandatory
-                  </th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
-                    Valid Values
-                  </th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
-                    Description
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {fields.map((field, index) => (
-                  <tr key={index} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="py-4 px-6 text-sm font-mono text-gray-900 font-medium">
-                      {field.sapFile}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-900">
-                      {field.dbField}
-                    </td>
-                    <td className="py-4 px-6">
-                      {getDataTypeBadge(field.type)}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
-                      {field.length}
-                    </td>
-                    <td className="py-4 px-6">
-                      {getMandatoryBadge(field.mandatory)}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
-                      {field.validValues ? (
-                        <div className="flex flex-wrap gap-1 max-w-xs">
-                          {field.validValues.map((value, idx) => (
-                            <Badge 
-                              key={idx} 
-                              variant="outline" 
-                              className="text-xs bg-gray-100 text-gray-700 border-gray-300"
-                            >
-                              {value}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600 max-w-md">
-                      <div className="truncate" title={field.description}>
-                        {field.description}
-                      </div>
-                    </td>
+    <div className="space-y-6 h-full flex flex-col">
+      {/* Fields Table with Scrollable Container */}
+      <Card className="overflow-hidden flex-1 flex flex-col">
+        <CardContent className="p-0 flex-1 flex flex-col">
+          <div className="overflow-x-auto flex-1">
+            <div className="h-full max-h-[calc(100vh-300px)] overflow-y-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                  <tr>
+                    <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
+                      SAP Field Name
+                    </th>
+                    <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
+                      Database Field Name
+                    </th>
+                    <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
+                      Data Type
+                    </th>
+                    <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
+                      Field Length
+                    </th>
+                    <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
+                      Mandatory
+                    </th>
+                    <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
+                      Valid Values
+                    </th>
+                    <th className="text-left py-4 px-6 font-semibold text-gray-900 text-sm">
+                      Description
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {fields.map((field, index) => (
+                    <tr key={index} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="py-4 px-6 text-sm font-mono text-gray-900 font-medium">
+                        {field.sapFile}
+                      </td>
+                      <td className="py-4 px-6 text-sm text-gray-900">
+                        {field.dbField}
+                      </td>
+                      <td className="py-4 px-6">
+                        {getDataTypeBadge(field.type)}
+                      </td>
+                      <td className="py-4 px-6 text-sm text-gray-600">
+                        {field.length}
+                      </td>
+                      <td className="py-4 px-6">
+                        {getMandatoryBadge(field.mandatory)}
+                      </td>
+                      <td className="py-4 px-6 text-sm text-gray-600">
+                        {field.validValues ? (
+                          <div className="flex flex-wrap gap-1 max-w-xs">
+                            {field.validValues.map((value, idx) => (
+                              <Badge 
+                                key={idx} 
+                                variant="outline" 
+                                className="text-xs bg-gray-100 text-gray-700 border-gray-300"
+                              >
+                                {value}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-6 text-sm text-gray-600 max-w-md">
+                        <div className="truncate" title={field.description}>
+                          {field.description}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Data Type Legend */}
-      <Card className="bg-gray-50">
-        <CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Type Legend</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="flex items-center gap-2">
-              <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">AlphaNumeric</Badge>
-              <span className="text-sm text-gray-600">Text and numbers</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">Char</Badge>
-              <span className="text-sm text-gray-600">Character string</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs">Numeric</Badge>
-              <span className="text-sm text-gray-600">Decimal numbers</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-xs">Integer</Badge>
-              <span className="text-sm text-gray-600">Whole numbers</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-pink-100 text-pink-800 border-pink-200 text-xs">Date</Badge>
-              <span className="text-sm text-gray-600">Date values</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
