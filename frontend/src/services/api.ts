@@ -1,4 +1,4 @@
-import { ValidationResponse, InstructionsResponse, SampleDataResponse } from '../types';
+import { ValidationResponse, InstructionsResponse, SampleDataResponse, SAPCategoriesResponse, SAPMainCategory, SAPSubCategory } from '../types';
 import { API_BASE_URL, API_ENDPOINTS } from '../constants/api';
 
 export const api = {
@@ -49,5 +49,52 @@ export const api = {
       throw new Error(errorData.message || 'Failed to create field instruction');
     }
     return response.json();
+  },
+
+  // SAP Categories API
+  // Get all categories with subcategories
+  getSAPCategories: async (): Promise<SAPCategoriesResponse> => {
+    const response = await fetch(`${API_BASE_URL}/api/categories`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch SAP categories');
+    }
+    return response.json();
+  },
+
+  // Get main categories only
+  getMainCategories: async (): Promise<{ success: boolean; data: SAPMainCategory[] }> => {
+    const response = await fetch(`${API_BASE_URL}/api/categories/main`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch main categories');
+    }
+    return response.json();
+  },
+
+  // Get subcategories by main category ID
+  getSubcategoriesByMainCategoryId: async (mainCategoryId: number): Promise<{ success: boolean; data: SAPSubCategory[] }> => {
+    const response = await fetch(`${API_BASE_URL}/api/categories/${mainCategoryId}/subcategories`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch subcategories');
+    }
+    return response.json();
+  },
+
+  // Get subcategories by main category name
+  getSubcategoriesByMainCategoryName: async (mainCategoryName: string): Promise<{ success: boolean; data: SAPSubCategory[] }> => {
+    const response = await fetch(`${API_BASE_URL}/api/categories/name/${encodeURIComponent(mainCategoryName)}/subcategories`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch subcategories');
+    }
+    return response.json();
+  },
+
+  // Download template or sample file
+  downloadFile: async (subCategoryId: number, fileType: 'template' | 'sample'): Promise<Blob> => {
+    const response = await fetch(`${API_BASE_URL}/api/categories/download/${subCategoryId}/${fileType}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to download file');
+    }
+    return response.blob();
   },
 };

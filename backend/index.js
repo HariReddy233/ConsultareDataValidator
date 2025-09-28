@@ -5,10 +5,12 @@ const { pool } = require('./config/database');
 // Import routes
 const instructionRoutes = require('./routes/instructionRoutes');
 const healthRoutes = require('./routes/healthRoutes');
+const sapCategoryRoutes = require('./routes/sapCategoryRoutes');
 
 // Use routes
 app.use('/', instructionRoutes);
 app.use('/', healthRoutes);
+app.use('/api/categories', sapCategoryRoutes);
 
 // 404 handler for undefined routes
 app.use('*', (req, res) => {
@@ -32,6 +34,10 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`  POST   /validate/:category`);
   console.log(`  GET    /download-sample/:category`);
   console.log(`  GET    /debug/tables`);
+  console.log(`  GET    /api/categories`);
+  console.log(`  GET    /api/categories/main`);
+  console.log(`  GET    /api/categories/:mainCategoryId/subcategories`);
+  console.log(`  GET    /api/categories/download/:subCategoryId/:fileType`);
 });
 
 // Graceful shutdown

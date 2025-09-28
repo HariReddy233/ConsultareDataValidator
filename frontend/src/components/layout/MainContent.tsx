@@ -1,13 +1,16 @@
-import React, { useState, useRef } from 'react';
-import { DataCategory, ValidationResponse } from '../../types';
+import React, { useState, useRef, useEffect } from 'react';
+import { DataCategory, ValidationResponse, SAPSubCategory } from '../../types';
 import { api } from '../../services/api';
+import { useSAPCategories } from '../../hooks/useSAPCategories';
 import ValidationResults from '../display/ValidationResults';
 import FieldInstructions from '../display/FieldInstructions';
 import AddFieldInstructionForm from '../forms/AddFieldInstructionForm';
+import AIHelper from '../ui/AIHelper';
+import LoadingAnimation from '../ui/LoadingAnimation';
 import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
-import { Upload, Download, FileText, CheckCircle, AlertCircle, XCircle, Filter, Plus } from 'lucide-react';
+import { Upload, Download, FileText, CheckCircle, AlertCircle, XCircle, Filter, Plus, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface MainContentProps {
@@ -20,10 +23,53 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
   const [fileData, setFileData] = useState<any[]>([]);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [selectedDataCategory, setSelectedDataCategory] = useState<string>('');
+  const [selectedSubCategory, setSelectedSubCategory] = useState<SAPSubCategory | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [refreshInstructions, setRefreshInstructions] = useState<number>(0);
+  const [subcategories, setSubcategories] = useState<SAPSubCategory[]>([]);
+  const [loadingSubcategories, setLoadingSubcategories] = useState(false);
+  const [showDropdownHighlight, setShowDropdownHighlight] = useState(false);
+  const [hasInteractedWithDropdown, setHasInteractedWithDropdown] = useState(false);
+  const [isClearingOutput, setIsClearingOutput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const { categories, downloadFile } = useSAPCategories();
+
+  // Load subcategories when category changes
+  useEffect(() => {
+    const loadSubcategories = async () => {
+      if (!category) return;
+      
+      setLoadingSubcategories(true);
+      try {
+        // Find the main category by matching the category name
+        const mainCategory = categories.find(cat => 
+          cat.MainCategoryName.replace(/\s+/g, '') === category
+        );
+        
+        if (mainCategory) {
+          setSubcategories(mainCategory.SubCategories);
+        } else {
+          setSubcategories([]);
+        }
+      } catch (error) {
+        console.error('Error loading subcategories:', error);
+        setSubcategories([]);
+      } finally {
+        setLoadingSubcategories(false);
+      }
+    };
+
+    loadSubcategories();
+  }, [category, categories]);
+
+  // Trigger dropdown highlight on page load
+  useEffect(() => {
+    if (subcategories.length > 0 && !hasInteractedWithDropdown) {
+      setShowDropdownHighlight(true);
+    }
+  }, [subcategories, hasInteractedWithDropdown]);
 
   const getCategoryTitle = (category: DataCategory) => {
     switch (category) {
@@ -38,6 +84,14 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
       default:
         return 'Data Validation';
     }
+  };
+
+  // Get dynamic tab name based on selected subcategory
+  const getTabName = () => {
+    if (selectedDataCategory) {
+      return selectedDataCategory;
+    }
+    return 'Customer Data'; // Default fallback
   };
 
   const getCategoryDescription = (category: DataCategory) => {
@@ -55,41 +109,28 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
     }
   };
 
-  const getDataCategoryOptions = (category: DataCategory) => {
-    switch (category) {
-      case 'BusinessPartnerMasterData':
-        return [
-          'General Info',
-          'Address',
-          'Tax Info',
-          'Contact Person',
-          'State Code',
-          'Group Code'
-        ];
-      case 'ItemMasterData':
-        return [
-          'Item Details',
-          'Pricing',
-          'Inventory',
-          'Categories',
-          'Specifications'
-        ];
-      case 'FinancialData':
-        return [
-          'Chart of Accounts',
-          'GL Accounts',
-          'Cost Centers',
-          'Profit Centers'
-        ];
-      case 'SetupData':
-        return [
-          'Company Settings',
-          'User Management',
-          'System Configuration',
-          'Integration Settings'
-        ];
-      default:
-        return [];
+  // Handle subcategory selection
+  const handleSubCategoryChange = (subCategoryName: string) => {
+    const subCategory = subcategories.find(sub => sub.SubCategoryName === subCategoryName);
+    setSelectedSubCategory(subCategory || null);
+    setSelectedDataCategory(subCategoryName);
+    
+    // Clear output when user selects a different category
+    if (selectedDataCategory && selectedDataCategory !== subCategoryName) {
+      setIsClearingOutput(true);
+      // Add a small delay for smooth transition
+      setTimeout(() => {
+        setValidationResults(null);
+        setFileData([]);
+        setUploadedFile(null);
+        setIsClearingOutput(false);
+      }, 300);
+    }
+    
+    // Remove highlight when user interacts with dropdown
+    if (!hasInteractedWithDropdown) {
+      setHasInteractedWithDropdown(true);
+      setShowDropdownHighlight(false);
     }
   };
 
@@ -142,22 +183,30 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
 
 
   const handleDownloadTemplate = async () => {
+    if (!selectedSubCategory) {
+      alert('Please select a subcategory first');
+      return;
+    }
+    
     try {
-      const response = await api.getSampleData(category);
-      // Create and download Excel file
-      console.log('Downloading template:', response);
+      await downloadFile(selectedSubCategory.SubCategoryID, 'template');
     } catch (error) {
       console.error('Failed to download template:', error);
+      alert('Failed to download template file');
     }
   };
 
   const handleDownloadSample = async () => {
+    if (!selectedSubCategory) {
+      alert('Please select a subcategory first');
+      return;
+    }
+    
     try {
-      const response = await api.getSampleData(category);
-      // Create and download sample file
-      console.log('Downloading sample:', response);
+      await downloadFile(selectedSubCategory.SubCategoryID, 'sample');
     } catch (error) {
       console.error('Failed to download sample:', error);
+      alert('Failed to download sample file');
     }
   };
 
@@ -179,19 +228,30 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
           {/* Data Category Dropdown */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">Choose Data Catgory:</label>
-              <select
-                value={selectedDataCategory}
-                onChange={(e) => setSelectedDataCategory(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-48"
-              >
-                <option value="">Select Category</option>
-                {getDataCategoryOptions(category).map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
+              <label className={`text-sm font-medium ${showDropdownHighlight ? 'text-blue-600' : 'text-gray-700'}`}>
+                Choose Data Category:
+              </label>
+              {loadingSubcategories ? (
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm text-gray-500">Loading...</span>
+                </div>
+              ) : (
+                <select
+                  value={selectedDataCategory}
+                  onChange={(e) => handleSubCategoryChange(e.target.value)}
+                  className={`px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-48 ${
+                    showDropdownHighlight ? 'dropdown-highlight' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select Category</option>
+                  {subcategories.map((subcategory) => (
+                    <option key={subcategory.SubCategoryID} value={subcategory.SubCategoryName}>
+                      {subcategory.SubCategoryName}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
           
@@ -213,16 +273,18 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
             />
             <Button 
               variant="outline" 
-              className="flex items-center gap-2 border-gray-300 hover:bg-gray-50 px-4 py-2"
+              className="flex items-center gap-2 border-gray-300 hover:bg-gray-50 px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleDownloadTemplate}
+              disabled={!selectedSubCategory}
             >
               <Download className="w-4 h-4" />
               Template
             </Button>
             <Button 
               variant="outline" 
-              className="flex items-center gap-2 bg-sap-success/10 text-sap-success border-sap-success/20 hover:bg-sap-success/20 px-4 py-2"
+              className="flex items-center gap-2 bg-sap-success/10 text-sap-success border-sap-success/20 hover:bg-sap-success/20 px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleDownloadSample}
+              disabled={!selectedSubCategory}
             >
               <FileText className="w-4 h-4" />
               Sample
@@ -232,7 +294,6 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
         
         {/* Horizontal Line */}
         <div className="mt-4 border-t border-gray-300"></div>
-
 
         {/* File Upload Status */}
         {uploadedFile && (
@@ -254,13 +315,13 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
             <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
               <button
                 onClick={() => setActiveTab('upload')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ${
                   activeTab === 'upload'
                     ? 'bg-blue-900 text-white shadow-sm'
                     : 'text-gray-600 hover:bg-blue-800 hover:text-white'
                 }`}
               >
-                Customer Data
+                <span className="transition-all duration-300">{getTabName()}</span>
               </button>
               <button
                 onClick={() => setActiveTab('instructions')}
@@ -314,10 +375,25 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
       <div className="flex-1 p-6 overflow-hidden">
         {activeTab === 'upload' && (
           <div className="space-y-6">
+            {/* Show loading animation while subcategories are loading */}
+            {loadingSubcategories ? (
+              <LoadingAnimation message="Loading categories..." />
+            ) : (
+              /* AI Helper - Show in empty content area or when no validation results */
+              (!uploadedFile || !validationResults) && (
+                <div className="flex justify-center items-center min-h-[400px]">
+                  <AIHelper 
+                    selectedCategory={selectedDataCategory}
+                    hasUploadedFile={!!uploadedFile}
+                    className="fade-in-up w-full max-w-2xl"
+                  />
+                </div>
+              )
+            )}
             
             {/* Validation Results */}
-            {validationResults && (
-              <div className="space-y-4">
+            {validationResults && !isClearingOutput && (
+              <div className={`space-y-4 transition-opacity duration-300 ${isClearingOutput ? 'opacity-0' : 'opacity-100'}`}>
                 {/* Filter and Actions */}
                 <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
                   <div className="flex items-center gap-4">
@@ -352,6 +428,14 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
 
         {activeTab === 'instructions' && (
           <div className="h-full">
+            {/* AI Helper for Field Instructions tab */}
+            <div className="mb-6">
+              <AIHelper 
+                selectedCategory={selectedDataCategory}
+                hasUploadedFile={false}
+                className="fade-in-up"
+              />
+            </div>
             <FieldInstructions category={category} refreshTrigger={refreshInstructions} />
           </div>
         )}

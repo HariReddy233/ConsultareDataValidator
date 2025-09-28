@@ -51,3 +51,28 @@ export interface TabConfig {
   label: string;
   category: DataCategory;
 }
+
+// New SAP Category types
+export interface SAPSubCategory {
+  SubCategoryID: number;
+  SubCategoryName: string;
+  TemplatePath: string;
+  SamplePath: string;
+}
+
+export interface SAPMainCategory {
+  MainCategoryID: number;
+  MainCategoryName: string;
+  SubCategories: SAPSubCategory[];
+}
+
+export interface SAPCategoriesResponse {
+  success: boolean;
+  data: SAPMainCategory[];
+}
+
+export interface FileDownloadResponse {
+  success: boolean;
+  message?: string;
+  filePath?: string;
+}
