@@ -10,7 +10,8 @@ class SAPCategory {
         sc."SubCategoryID",
         sc."SubCategoryName",
         sc."TemplatePath",
-        sc."SamplePath"
+        sc."SamplePath",
+        sc."Data_Table"
       FROM "SAP_MainCategories" mc
       LEFT JOIN "SAP_SubCategories" sc ON mc."MainCategoryID" = sc."MainCategoryID"
       ORDER BY mc."MainCategoryID", sc."SubCategoryID"
@@ -36,7 +37,8 @@ class SAPCategory {
           SubCategoryID: row.SubCategoryID,
           SubCategoryName: row.SubCategoryName,
           TemplatePath: row.TemplatePath,
-          SamplePath: row.SamplePath
+          SamplePath: row.SamplePath,
+          Data_Table: row.Data_Table
         });
       }
     });
@@ -61,7 +63,8 @@ class SAPCategory {
         "SubCategoryID",
         "SubCategoryName",
         "TemplatePath",
-        "SamplePath"
+        "SamplePath",
+        "Data_Table"
       FROM "SAP_SubCategories"
       WHERE "MainCategoryID" = $1
       ORDER BY "SubCategoryID"
@@ -76,7 +79,8 @@ class SAPCategory {
         sc."SubCategoryID",
         sc."SubCategoryName",
         sc."TemplatePath",
-        sc."SamplePath"
+        sc."SamplePath",
+        sc."Data_Table"
       FROM "SAP_SubCategories" sc
       JOIN "SAP_MainCategories" mc ON sc."MainCategoryID" = mc."MainCategoryID"
       WHERE mc."MainCategoryName" = $1

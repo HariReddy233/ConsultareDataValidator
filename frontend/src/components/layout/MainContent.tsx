@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { DataCategory, ValidationResponse, SAPSubCategory } from '../../types';
+import { DataCategory, ValidationResponse, SAPSubCategory, SAPMainCategory } from '../../types';
 import { api } from '../../services/api';
 import { useSAPCategories } from '../../hooks/useSAPCategories';
 import ValidationResults from '../display/ValidationResults';
@@ -7,10 +7,9 @@ import FieldInstructions from '../display/FieldInstructions';
 import AddFieldInstructionForm from '../forms/AddFieldInstructionForm';
 import AIHelper from '../ui/AIHelper';
 import LoadingAnimation from '../ui/LoadingAnimation';
-import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
-import { Upload, Download, FileText, CheckCircle, AlertCircle, XCircle, Filter, Plus, Loader2 } from 'lucide-react';
+import { Upload, Download, FileText, Filter, Plus, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface MainContentProps {
@@ -18,7 +17,7 @@ interface MainContentProps {
 }
 
 const MainContent: React.FC<MainContentProps> = ({ category }) => {
-  const [activeTab, setActiveTab] = useState<'upload' | 'instructions'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'instructions' | 'data'>('upload');
   const [validationResults, setValidationResults] = useState<ValidationResponse | null>(null);
   const [fileData, setFileData] = useState<any[]>([]);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -32,9 +31,30 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
   const [showDropdownHighlight, setShowDropdownHighlight] = useState(false);
   const [hasInteractedWithDropdown, setHasInteractedWithDropdown] = useState(false);
   const [isClearingOutput, setIsClearingOutput] = useState(false);
+  const [mainCategories, setMainCategories] = useState<SAPMainCategory[]>([]);
+  const [loadingMainCategories, setLoadingMainCategories] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { categories, downloadFile } = useSAPCategories();
+
+  // Load main categories on component mount
+  useEffect(() => {
+    const loadMainCategories = async () => {
+      setLoadingMainCategories(true);
+      try {
+        const response = await api.getMainCategories();
+        if (response.success) {
+          setMainCategories(response.data || []);
+        }
+      } catch (error) {
+        console.error('Error loading main categories:', error);
+      } finally {
+        setLoadingMainCategories(false);
+      }
+    };
+
+    loadMainCategories();
+  }, []);
 
   // Load subcategories when category changes
   useEffect(() => {
@@ -43,15 +63,33 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
       
       setLoadingSubcategories(true);
       try {
-        // Find the main category by matching the category name
-        const mainCategory = categories.find(cat => 
+        // First try to find in the already loaded categories
+        let mainCategory = categories?.find(cat => 
           cat.MainCategoryName.replace(/\s+/g, '') === category
         );
+        
+        // If not found, try to find in mainCategories
+        if (!mainCategory) {
+          mainCategory = mainCategories?.find(cat => 
+            cat.MainCategoryName.replace(/\s+/g, '') === category
+          );
+        }
         
         if (mainCategory) {
           setSubcategories(mainCategory.SubCategories);
         } else {
-          setSubcategories([]);
+          // If still not found, try to fetch subcategories directly
+          try {
+            const response = await api.getSubcategoriesByMainCategoryName(category);
+            if (response.success) {
+              setSubcategories(response.data || []);
+            } else {
+              setSubcategories([]);
+            }
+          } catch (fetchError) {
+            console.error('Error fetching subcategories directly:', fetchError);
+            setSubcategories([]);
+          }
         }
       } catch (error) {
         console.error('Error loading subcategories:', error);
@@ -62,29 +100,35 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
     };
 
     loadSubcategories();
-  }, [category, categories]);
+  }, [category, categories, mainCategories]);
 
   // Trigger dropdown highlight on page load
   useEffect(() => {
-    if (subcategories.length > 0 && !hasInteractedWithDropdown) {
+    if (subcategories && subcategories.length > 0 && !hasInteractedWithDropdown) {
       setShowDropdownHighlight(true);
     }
   }, [subcategories, hasInteractedWithDropdown]);
 
   const getCategoryTitle = (category: DataCategory) => {
-    switch (category) {
-      case 'BusinessPartnerMasterData':
-        return 'Business Partner Master Data';
-      case 'ItemMasterData':
-        return 'Item Master Data';
-      case 'FinancialData':
-        return 'Financial Data';
-      case 'SetupData':
-        return 'Set Up Data';
-      default:
-        return 'Data Validation';
+    // If main categories are still loading, show a loading state
+    if (loadingMainCategories) {
+      return 'Loading...';
     }
+
+    // Find the main category that matches the current category
+    // The category prop should match the MainCategoryName (with spaces removed)
+    const mainCategory = mainCategories?.find(cat => 
+      cat.MainCategoryName.replace(/\s+/g, '') === category
+    );
+
+    if (mainCategory) {
+      return mainCategory.MainCategoryName;
+    }
+
+    // If not found in API data, return the category as is (it might be a new category)
+    return category.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
   };
+
 
   // Get dynamic tab name based on selected subcategory
   const getTabName = () => {
@@ -95,23 +139,13 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
   };
 
   const getCategoryDescription = (category: DataCategory) => {
-    switch (category) {
-      case 'BusinessPartnerMasterData':
-        return 'Upload for comprehensive field validation.';
-      case 'ItemMasterData':
-        return 'Upload for comprehensive field validation.';
-      case 'FinancialData':
-        return 'Upload for comprehensive field validation.';
-      case 'SetupData':
-        return 'Upload for comprehensive field validation.';
-      default:
-        return 'Upload for comprehensive field validation.';
-    }
+    // Return a generic description for all categories
+    return 'Upload for comprehensive field validation.';
   };
 
   // Handle subcategory selection
   const handleSubCategoryChange = (subCategoryName: string) => {
-    const subCategory = subcategories.find(sub => sub.SubCategoryName === subCategoryName);
+    const subCategory = subcategories?.find(sub => sub.SubCategoryName === subCategoryName);
     setSelectedSubCategory(subCategory || null);
     setSelectedDataCategory(subCategoryName);
     
@@ -245,7 +279,7 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
                   }`}
                 >
                   <option value="">Select Category</option>
-                  {subcategories.map((subcategory) => (
+                  {subcategories?.map((subcategory) => (
                     <option key={subcategory.SubCategoryID} value={subcategory.SubCategoryName}>
                       {subcategory.SubCategoryName}
                     </option>
@@ -334,6 +368,16 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
                 Field Instructions
               </button>
             </div>
+            
+            {/* AI Helper message beside Field Instructions tab */}
+            {activeTab === 'instructions' && (
+              <div className="flex items-center gap-2 ml-4 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
+                <span className="text-xs text-blue-800">
+                  Selected "{selectedDataCategory || 'Field Instructions'}" - Upload Excel for validation. AI ready.
+                </span>
+              </div>
+            )}
           </div>
           
           {/* Add Row Button - only show when on instructions tab, positioned on the right */}
@@ -428,17 +472,14 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
 
         {activeTab === 'instructions' && (
           <div className="h-full">
-            {/* AI Helper for Field Instructions tab */}
-            <div className="mb-6">
-              <AIHelper 
-                selectedCategory={selectedDataCategory}
-                hasUploadedFile={false}
-                className="fade-in-up"
-              />
-            </div>
-            <FieldInstructions category={category} refreshTrigger={refreshInstructions} />
+            <FieldInstructions 
+              category={category} 
+              subcategory={selectedDataCategory} 
+              refreshTrigger={refreshInstructions} 
+            />
           </div>
         )}
+
       </div>
 
       {/* Add Field Instruction Form Modal */}

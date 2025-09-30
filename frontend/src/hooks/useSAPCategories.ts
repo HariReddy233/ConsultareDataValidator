@@ -12,7 +12,7 @@ export const useSAPCategories = () => {
       setLoading(true);
       setError(null);
       const response = await api.getSAPCategories();
-      setCategories(response.data);
+      setCategories(response.data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch categories');
       console.error('Error fetching SAP categories:', err);
@@ -28,7 +28,7 @@ export const useSAPCategories = () => {
   const getSubcategoriesByMainCategoryId = useCallback(async (mainCategoryId: number): Promise<SAPSubCategory[]> => {
     try {
       const response = await api.getSubcategoriesByMainCategoryId(mainCategoryId);
-      return response.data;
+      return response.data || [];
     } catch (err) {
       console.error('Error fetching subcategories:', err);
       throw err;
@@ -38,7 +38,7 @@ export const useSAPCategories = () => {
   const getSubcategoriesByMainCategoryName = useCallback(async (mainCategoryName: string): Promise<SAPSubCategory[]> => {
     try {
       const response = await api.getSubcategoriesByMainCategoryName(mainCategoryName);
-      return response.data;
+      return response.data || [];
     } catch (err) {
       console.error('Error fetching subcategories:', err);
       throw err;

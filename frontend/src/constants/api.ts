@@ -23,6 +23,25 @@ export const API_ENDPOINTS = {
   },
   // Health
   HEALTH: '/health',
+  // Authentication
+  AUTH: {
+    REGISTER: '/api/auth/register',
+    LOGIN: '/api/auth/login',
+    LOGOUT: '/api/auth/logout',
+    PROFILE: '/api/auth/profile',
+    CHANGE_PASSWORD: '/api/auth/change-password',
+    PERMISSIONS: '/api/auth/permissions',
+    FORGOT_PASSWORD: '/api/auth/forgot-password',
+    RESET_PASSWORD: '/api/auth/reset-password',
+  },
+  // Dynamic Data
+  DYNAMIC_DATA: {
+    GET_DATA: (category: string) => `/api/dynamic-data/${category}`,
+    GET_COLUMNS: (category: string) => `/api/dynamic-data/${category}/columns`,
+    INSERT_DATA: (category: string) => `/api/dynamic-data/${category}`,
+    UPDATE_DATA: (category: string, id: string) => `/api/dynamic-data/${category}/${id}`,
+    DELETE_DATA: (category: string, id: string) => `/api/dynamic-data/${category}/${id}`
+  },
 } as const;
 
 // Request timeout

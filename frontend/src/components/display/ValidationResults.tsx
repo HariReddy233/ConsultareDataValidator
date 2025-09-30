@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ValidationResponse, ValidationResult } from '../../types';
+import { ValidationResponse } from '../../types';
 import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
-import { ChevronLeft, ChevronRight, AlertTriangle, CheckCircle, XCircle, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
 interface ValidationResultsProps {
   results: ValidationResponse;
@@ -75,6 +75,41 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({ results, statusFi
 
   return (
     <div className="space-y-6">
+      {/* AI Recommendations */}
+      {results.aiRecommendations && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-xs font-bold">AI</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 mb-2">AI Recommendations</h3>
+                <p className="text-blue-800 text-sm leading-relaxed">{results.aiRecommendations}</p>
+                <div className="mt-2 text-xs text-blue-600">
+                  Validation Method: {results.validationMethod || 'AI'}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Error Fallback */}
+      {results.aiError && (
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-yellow-900 mb-1">AI Validation Unavailable</h3>
+                <p className="text-yellow-800 text-sm">Using basic validation instead. {results.aiError}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Results Table */}
       <Card className="overflow-hidden">
         <CardContent className="p-0">
@@ -135,8 +170,15 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({ results, statusFi
                       )}
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-600 max-w-md">
-                      <div className="truncate" title={result.message}>
-                        {result.message}
+                      <div className="space-y-2">
+                        <div className="truncate" title={result.message}>
+                          {result.message}
+                        </div>
+                        {result.aiInsights && (
+                          <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded border-l-2 border-blue-200">
+                            <strong>AI Insight:</strong> {result.aiInsights}
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>

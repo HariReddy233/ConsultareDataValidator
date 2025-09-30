@@ -1,24 +1,30 @@
 # Consultare Data Validation System
 
-A comprehensive full-stack application for validating business data using React, Node.js, and PostgreSQL.
+A comprehensive full-stack application for validating business data using React, Node.js, and PostgreSQL with integrated user authentication and role-based access control.
 
 ## 🚀 Features
 
 ### Backend (Node.js + PostgreSQL)
+- **User Authentication** with JWT tokens and bcrypt password hashing
+- **Role-Based Access Control** with permission-based module access
 - **CRUD APIs** for Business Partner Master Instructions
 - **Validation Engine** with configurable business rules
 - **Excel Processing** with comprehensive field validation
 - **Sample File Generation** for each data category
 - **PostgreSQL Integration** with proper error handling
+- **User Management** with profile and password management
 
 ### Frontend (React + TypeScript + Tailwind)
+- **User Authentication** with login/register forms and protected routes
+- **Role-Based UI** with permission-based component rendering
 - **Modern UI** with Tailwind CSS and shadcn/ui components
-- **Sidebar Navigation** with multiple data categories
+- **Sidebar Navigation** with multiple data categories and user profile
 - **Drag & Drop File Upload** for Excel files
 - **Real-time Validation** with progress indicators
 - **Detailed Results Table** with pagination
 - **Field Instructions** with validation rules
 - **Sample File Download** functionality
+- **User Profile Management** with settings and password change
 
 ## 📋 Data Categories
 
@@ -46,6 +52,8 @@ A comprehensive full-stack application for validating business data using React,
 - **Node.js** with Express.js
 - **PostgreSQL** database
 - **pg** for database connectivity
+- **JWT** for authentication
+- **bcrypt** for password hashing
 - **CORS** enabled for frontend integration
 
 ### Frontend
@@ -73,12 +81,22 @@ A comprehensive full-stack application for validating business data using React,
 2. **Environment Configuration**
    Create a `.env` file with your database credentials:
    ```env
+   # Database Configuration
    DB_USER=admin
    DB_HOST=45.33.94.229
    DB_NAME=sapb1validator
    DB_PASSWORD=Chung@2024
    DB_PORT=5432
+   
+   # Server Configuration
    PORT=3000
+   
+   # OpenAI Configuration (Optional - for AI-powered validation)
+   OPENAI_API_KEY=your_openai_api_key_here
+   
+   # JWT Configuration
+   JWT_SECRET=your_jwt_secret_here
+   JWT_EXPIRES_IN=7d
    ```
 
 3. **Start Backend Server**

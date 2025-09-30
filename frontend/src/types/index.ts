@@ -6,7 +6,11 @@ export interface ValidationField {
   length: number;
   mandatory: boolean;
   validValues: string[] | null;
-  relatedTable: string;
+  relatedTable: string | null;
+  remarks: string | null;
+  instructionImagePath: string | null;
+  tableName: string | null;
+  errorDetails?: string | null;
 }
 
 export interface ValidationResult {
@@ -15,6 +19,7 @@ export interface ValidationResult {
   status: 'Valid' | 'Warning' | 'Error';
   fieldsWithIssues: string[];
   message: string;
+  aiInsights?: string;
 }
 
 export interface ValidationSummary {
@@ -29,6 +34,9 @@ export interface ValidationResponse {
   category: string;
   summary: ValidationSummary;
   results: ValidationResult[];
+  aiRecommendations?: string;
+  validationMethod?: 'AI' | 'Basic';
+  aiError?: string;
 }
 
 export interface InstructionsResponse {
@@ -44,7 +52,63 @@ export interface SampleDataResponse {
   sampleData: Record<string, string>[];
 }
 
-export type DataCategory = 'BusinessPartnerMasterData' | 'ItemMasterData' | 'FinancialData' | 'SetupData';
+export interface ValidationField {
+  sapFile: string;
+  dbField: string;
+  description: string;
+  type: string;
+  length: number;
+  mandatory: boolean;
+  validValues: string[] | null;
+  relatedTable: string | null;
+  remarks: string | null;
+  instructionImagePath: string | null;
+  tableName: string | null;
+  errorDetails?: string | null;
+}
+
+export interface ValidationResult {
+  rowNumber: number;
+  code: string;
+  status: 'Valid' | 'Warning' | 'Error';
+  fieldsWithIssues: string[];
+  message: string;
+  aiInsights?: string;
+}
+
+export interface ValidationSummary {
+  total: number;
+  valid: number;
+  warnings: number;
+  errors: number;
+}
+
+export interface ValidationResponse {
+  success: boolean;
+  category: string;
+  summary: ValidationSummary;
+  results: ValidationResult[];
+  aiRecommendations?: string;
+  validationMethod?: 'AI' | 'Basic';
+  aiError?: string;
+}
+
+export interface InstructionsResponse {
+  success: boolean;
+  category: string;
+  fields: ValidationField[];
+}
+
+export interface SampleDataResponse {
+  success: boolean;
+  category: string;
+  headers: string[];
+  sampleData: Record<string, string>[];
+}
+
+// DataCategory is now a string that represents the main category name with spaces removed
+// This allows for dynamic categories loaded from the database
+export type DataCategory = string;
 
 export interface TabConfig {
   id: string;
@@ -58,6 +122,7 @@ export interface SAPSubCategory {
   SubCategoryName: string;
   TemplatePath: string;
   SamplePath: string;
+  Data_Table: string;
 }
 
 export interface SAPMainCategory {
@@ -69,6 +134,51 @@ export interface SAPMainCategory {
 export interface SAPCategoriesResponse {
   success: boolean;
   data: SAPMainCategory[];
+}
+
+// Dynamic Data API types
+export interface DynamicDataResponse {
+  success: boolean;
+  message: string;
+  data: {
+    category: string;
+    tableName: string;
+    columns: string[];
+    data: any[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalRecords: number;
+      limit: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+    search: string;
+    sort: {
+      by: string;
+      order: string;
+    };
+  };
+}
+
+export interface ColumnInfo {
+  name: string;
+  type: string;
+  nullable: boolean;
+  defaultValue: string | null;
+  maxLength: number | null;
+  precision: number | null;
+  scale: number | null;
+}
+
+export interface ColumnInfoResponse {
+  success: boolean;
+  message: string;
+  data: {
+    category: string;
+    tableName: string;
+    columns: ColumnInfo[];
+  };
 }
 
 export interface FileDownloadResponse {

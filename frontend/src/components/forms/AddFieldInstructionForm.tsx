@@ -3,7 +3,7 @@ import { DataCategory } from '../../types';
 import { api } from '../../services/api';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Loader2 } from 'lucide-react';
 
 interface AddFieldInstructionFormProps {
   category: DataCategory;
@@ -12,37 +12,35 @@ interface AddFieldInstructionFormProps {
   onSuccess: () => void;
 }
 
-interface FormData {
-  sap_field_name: string;
-  db_field_name: string;
-  description: string;
-  data_type: string;
-  field_length: string;
-  is_mandatory: boolean;
-  valid_values: string;
-  related_table: string;
-}
-
 const AddFieldInstructionForm: React.FC<AddFieldInstructionFormProps> = ({
   category,
   isOpen,
   onClose,
   onSuccess
 }) => {
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
     sap_field_name: '',
     db_field_name: '',
     description: '',
-    data_type: 'Char',
+    data_type: 'String',
     field_length: '',
     is_mandatory: false,
     valid_values: '',
-    related_table: ''
+    related_table: '',
+    remarks: ''
   });
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const dataTypes = ['Char', 'AlphaNumeric', 'Numeric', 'Integer', 'Date'];
+  const dataTypes = [
+    'String',
+    'AlphaNumeric',
+    'Char',
+    'Numeric',
+    'Integer',
+    'Date',
+    'Boolean'
+  ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -54,30 +52,45 @@ const AddFieldInstructionForm: React.FC<AddFieldInstructionFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsSubmitting(true);
     setError(null);
 
     try {
-      await api.createFieldInstruction(category, formData);
+      // Prepare the data for submission
+      const submitData = {
+        ...formData,
+        field_length: parseInt(formData.field_length) || 0,
+        valid_values: formData.valid_values ? formData.valid_values.split(',').map(v => v.trim()) : null
+      };
 
-      // Reset form and close
-      setFormData({
-        sap_field_name: '',
-        db_field_name: '',
-        description: '',
-        data_type: 'Char',
-        field_length: '',
-        is_mandatory: false,
-        valid_values: '',
-        related_table: ''
-      });
+      await api.createFieldInstruction(category, submitData);
       onSuccess();
-      onClose();
+      resetForm();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Failed to create field instruction');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      sap_field_name: '',
+      db_field_name: '',
+      description: '',
+      data_type: 'String',
+      field_length: '',
+      is_mandatory: false,
+      valid_values: '',
+      related_table: '',
+      remarks: ''
+    });
+    setError(null);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -87,12 +100,14 @@ const AddFieldInstructionForm: React.FC<AddFieldInstructionFormProps> = ({
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Add Field Instruction</h2>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Add Field Instruction
+            </h2>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              onClick={handleClose}
+              className="p-2"
             >
               <X className="w-4 h-4" />
             </Button>
@@ -116,8 +131,8 @@ const AddFieldInstructionForm: React.FC<AddFieldInstructionFormProps> = ({
                   value={formData.sap_field_name}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sap-primary focus:border-sap-primary"
-                  placeholder="e.g., CUSTOMER_CODE"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., CardCode"
                 />
               </div>
 
@@ -131,8 +146,22 @@ const AddFieldInstructionForm: React.FC<AddFieldInstructionFormProps> = ({
                   value={formData.db_field_name}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sap-primary focus:border-sap-primary"
-                  placeholder="e.g., customer_code"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., card_code"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Field description"
                 />
               </div>
 
@@ -145,7 +174,7 @@ const AddFieldInstructionForm: React.FC<AddFieldInstructionFormProps> = ({
                   value={formData.data_type}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sap-primary focus:border-sap-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {dataTypes.map(type => (
                     <option key={type} value={type}>{type}</option>
@@ -163,8 +192,8 @@ const AddFieldInstructionForm: React.FC<AddFieldInstructionFormProps> = ({
                   value={formData.field_length}
                   onChange={handleInputChange}
                   required
-                  min="1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sap-primary focus:border-sap-primary"
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="e.g., 50"
                 />
               </div>
@@ -178,79 +207,78 @@ const AddFieldInstructionForm: React.FC<AddFieldInstructionFormProps> = ({
                   name="related_table"
                   value={formData.related_table}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sap-primary focus:border-sap-primary"
-                  placeholder="e.g., customers"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., OCRD"
                 />
               </div>
 
-              <div className="flex items-center">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Valid Values
+                </label>
                 <input
-                  type="checkbox"
-                  name="is_mandatory"
-                  checked={formData.is_mandatory}
+                  type="text"
+                  name="valid_values"
+                  value={formData.valid_values}
                   onChange={handleInputChange}
-                  className="h-4 w-4 text-sap-primary focus:ring-sap-primary border-gray-300 rounded"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., Y,N (comma-separated)"
                 />
-                <label className="ml-2 block text-sm text-gray-700">
-                  Mandatory Field
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Remarks
+                </label>
+                <textarea
+                  name="remarks"
+                  value={formData.remarks}
+                  onChange={handleInputChange}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Additional remarks or notes"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="is_mandatory"
+                    checked={formData.is_mandatory}
+                    onChange={handleInputChange}
+                    className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    This field is mandatory
+                  </span>
                 </label>
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Valid Values
-              </label>
-              <input
-                type="text"
-                name="valid_values"
-                value={formData.valid_values}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sap-primary focus:border-sap-primary"
-                placeholder="e.g., ACTIVE,INACTIVE (comma-separated)"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Enter valid values separated by commas (optional)
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-sap-primary focus:border-sap-primary"
-                placeholder="Enter field description..."
-              />
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
               <Button
                 type="button"
                 variant="outline"
-                onClick={onClose}
-                disabled={loading}
+                onClick={handleClose}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={loading}
-                className="bg-sap-success hover:bg-sap-success/90 text-white"
+                disabled={isSubmitting}
+                className="flex items-center gap-2"
               >
-                {loading ? (
+                {isSubmitting ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    Adding...
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Creating...
                   </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Field Instruction
+                    <Plus className="w-4 h-4" />
+                    Create Field Instruction
                   </>
                 )}
               </Button>

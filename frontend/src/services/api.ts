@@ -11,6 +11,24 @@ export const api = {
     return response.json();
   },
 
+  // Get instructions by subcategory name (optimized single API)
+  getInstructionsBySubcategory: async (subcategoryName: string): Promise<InstructionsResponse> => {
+    const response = await fetch(`${API_BASE_URL}/instructions/subcategory/${encodeURIComponent(subcategoryName)}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch instructions for ${subcategoryName}`);
+    }
+    return response.json();
+  },
+
+  // Get dynamic field instructions from Data_Table
+  getDynamicFieldInstructions: async (subcategoryName: string): Promise<InstructionsResponse> => {
+    const response = await fetch(`${API_BASE_URL}/instructions/dynamic/${encodeURIComponent(subcategoryName)}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch dynamic field instructions for ${subcategoryName}`);
+    }
+    return response.json();
+  },
+
   // Validate uploaded data
   validateData: async (category: string, data: any[]): Promise<ValidationResponse> => {
     const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.CATEGORY.VALIDATE(category)}`, {
@@ -37,7 +55,7 @@ export const api = {
 
   // Create new field instruction
   createFieldInstruction: async (category: string, instructionData: any): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/instructions/${category}`, {
+    const response = await fetch(`${API_BASE_URL}/instructions/${category}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -56,7 +74,7 @@ export const api = {
   getSAPCategories: async (): Promise<SAPCategoriesResponse> => {
     const response = await fetch(`${API_BASE_URL}/api/categories`);
     if (!response.ok) {
-      throw new Error('Failed to fetch SAP categories');
+      throw new Error(`Failed to fetch SAP categories: ${response.status} ${response.statusText}`);
     }
     return response.json();
   },
@@ -96,5 +114,29 @@ export const api = {
       throw new Error(errorData.message || 'Failed to download file');
     }
     return response.blob();
+  },
+
+  // Get data from any table by table name (with variables)
+  getDataByTableName: async (tableName: string, params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'ASC' | 'DESC';
+  }): Promise<any> => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+    if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+
+    const url = `${API_BASE_URL}/api/dynamic-data/table/${encodeURIComponent(tableName)}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch data');
+    }
+    return response.json();
   },
 };

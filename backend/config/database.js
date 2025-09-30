@@ -18,7 +18,6 @@ const pool = new Pool({
 let dbConnected = false;
 
 pool.on('connect', () => {
-  console.log('Connected to PostgreSQL database');
   dbConnected = true;
 });
 
@@ -31,12 +30,10 @@ pool.on('error', (err) => {
 // Test initial connection
 pool.query('SELECT NOW()')
   .then(() => {
-    console.log('Database connection test successful');
     dbConnected = true;
   })
   .catch((err) => {
     console.warn('Database connection test failed:', err.message);
-    console.warn('Falling back to mock data mode');
     dbConnected = false;
   });
 
