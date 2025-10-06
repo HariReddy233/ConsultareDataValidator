@@ -5,6 +5,7 @@ import { useSAPCategories } from '../../hooks/useSAPCategories';
 import ValidationResults from '../display/ValidationResults';
 import FieldInstructions from '../display/FieldInstructions';
 import AddFieldInstructionForm from '../forms/AddFieldInstructionForm';
+import ExcelUploadForm from '../forms/ExcelUploadForm';
 import AIHelper from '../ui/AIHelper';
 import LoadingAnimation from '../ui/LoadingAnimation';
 import { Badge } from '../ui/Badge';
@@ -25,6 +26,7 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
   const [selectedSubCategory, setSelectedSubCategory] = useState<SAPSubCategory | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
+  const [showExcelUpload, setShowExcelUpload] = useState<boolean>(false);
   const [refreshInstructions, setRefreshInstructions] = useState<number>(0);
   const [subcategories, setSubcategories] = useState<SAPSubCategory[]>([]);
   const [loadingSubcategories, setLoadingSubcategories] = useState(false);
@@ -102,12 +104,19 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
     loadSubcategories();
   }, [category, categories, mainCategories]);
 
-  // Trigger dropdown highlight on page load
+  // Trigger dropdown highlight on page load and set default subcategory
   useEffect(() => {
     if (subcategories && subcategories.length > 0 && !hasInteractedWithDropdown) {
       setShowDropdownHighlight(true);
+      
+      // Set "Groups" as default subcategory if available
+      const groupsSubcategory = subcategories.find(sub => sub.SubCategoryName === 'Groups');
+      if (groupsSubcategory && !selectedDataCategory) {
+        setSelectedDataCategory('Groups');
+        setSelectedSubCategory(groupsSubcategory);
+      }
     }
-  }, [subcategories, hasInteractedWithDropdown]);
+  }, [subcategories, hasInteractedWithDropdown, selectedDataCategory]);
 
   const getCategoryTitle = (category: DataCategory) => {
     // If main categories are still loading, show a loading state
@@ -380,15 +389,26 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
             )}
           </div>
           
-          {/* Add Row Button - only show when on instructions tab, positioned on the right */}
+          {/* Action Buttons - only show when on instructions tab, positioned on the right */}
           {activeTab === 'instructions' && (
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white text-gray-600 hover:bg-blue-800 hover:text-white border border-gray-300 hover:border-blue-800 flex items-center gap-2"
-            >
-              <Plus className="w-3 h-3" />
-              Add Row
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white text-gray-600 hover:bg-blue-800 hover:text-white border border-gray-300 hover:border-blue-800 flex items-center gap-2"
+              >
+                <Plus className="w-3 h-3" />
+                Add Row
+              </button>
+              <button
+                onClick={() => setShowExcelUpload(true)}
+                className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white text-gray-600 hover:bg-green-800 hover:text-white border border-gray-300 hover:border-green-800 flex items-center gap-2"
+              >
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+                Upload Excel
+              </button>
+            </div>
           )}
           
           {/* Validation Summary - only show when on upload tab */}
@@ -437,10 +457,10 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
             
             {/* Validation Results */}
             {validationResults && !isClearingOutput && (
-              <div className={`space-y-4 transition-opacity duration-300 ${isClearingOutput ? 'opacity-0' : 'opacity-100'}`}>
+              <div className={`space-y-2 transition-opacity duration-300 ${isClearingOutput ? 'opacity-0' : 'opacity-100'}`}>
                 {/* Filter and Actions */}
-                <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
-                  <div className="flex items-center gap-4">
+                <div className="flex items-center justify-between bg-white p-2 rounded-lg border">
+                  <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
                       <Filter className="w-4 h-4 text-gray-500" />
                       <span className="text-sm font-medium text-gray-700">Filter by Status:</span>
@@ -448,7 +468,7 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
                     <select 
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-sap-primary focus:border-sap-primary"
+                      className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-sap-primary focus:border-sap-primary"
                     >
                       <option value="all">All Records</option>
                       <option value="valid">Valid Only</option>
@@ -490,6 +510,23 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
         onSuccess={() => {
           setRefreshInstructions(prev => prev + 1);
           setShowAddForm(false);
+        }}
+      />
+
+      {/* Excel Upload Form Modal */}
+      <ExcelUploadForm
+        category={category}
+        subcategory={selectedDataCategory}
+        isOpen={showExcelUpload}
+        onClose={() => setShowExcelUpload(false)}
+        onSuccess={() => {
+          console.log('MainContent: Excel upload successful, refreshing instructions...');
+          setRefreshInstructions(prev => {
+            const newValue = prev + 1;
+            console.log('MainContent: Refresh trigger updated to:', newValue);
+            return newValue;
+          });
+          setShowExcelUpload(false);
         }}
       />
     </div>

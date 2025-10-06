@@ -14,6 +14,30 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({ results, statusFi
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  // Reset to first page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
+
+  // Safety check for results
+  if (!results || !results.results || !Array.isArray(results.results)) {
+    return (
+      <div className="space-y-6">
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-yellow-900 mb-1">No Validation Results</h3>
+                <p className="text-yellow-800 text-sm">No validation results available to display.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Filter results based on status
   const filteredResults = results.results.filter(result => 
     statusFilter === 'all' || result.status.toLowerCase() === statusFilter
@@ -24,11 +48,6 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({ results, statusFi
   const endIndex = startIndex + rowsPerPage;
   
   const currentResults = filteredResults.slice(startIndex, endIndex);
-
-  // Reset to first page when filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [statusFilter]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -75,40 +94,7 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({ results, statusFi
 
   return (
     <div className="space-y-6">
-      {/* AI Recommendations */}
-      {results.aiRecommendations && (
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-white text-xs font-bold">AI</span>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-blue-900 mb-2">AI Recommendations</h3>
-                <p className="text-blue-800 text-sm leading-relaxed">{results.aiRecommendations}</p>
-                <div className="mt-2 text-xs text-blue-600">
-                  Validation Method: {results.validationMethod || 'AI'}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* AI Error Fallback */}
-      {results.aiError && (
-        <Card className="bg-yellow-50 border-yellow-200">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-yellow-900 mb-1">AI Validation Unavailable</h3>
-                <p className="text-yellow-800 text-sm">Using basic validation instead. {results.aiError}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Results Table */}
       <Card className="overflow-hidden">
@@ -135,25 +121,25 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({ results, statusFi
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {currentResults.map((result, index) => (
+                {currentResults && Array.isArray(currentResults) ? currentResults.map((result, index) => (
                   <tr 
-                    key={result.rowNumber} 
-                    className={`${getRowBackgroundColor(result.status)} hover:bg-gray-50/50 transition-colors`}
+                    key={result.rowNumber || index} 
+                    className={`${getRowBackgroundColor(result.status || 'Unknown')} hover:bg-gray-50/50 transition-colors`}
                   >
                     <td className="py-4 px-6 text-sm font-medium text-gray-900">
-                      {result.rowNumber}
+                      {result.rowNumber || '-'}
                     </td>
                     <td className="py-4 px-6 text-sm font-mono text-gray-900">
-                      {result.code}
+                      {result.code || '-'}
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
-                        {getStatusIcon(result.status)}
-                        {getStatusBadge(result.status)}
+                        {getStatusIcon(result.status || 'Unknown')}
+                        {getStatusBadge(result.status || 'Unknown')}
                       </div>
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-600">
-                      {result.fieldsWithIssues.length > 0 ? (
+                      {result.fieldsWithIssues && Array.isArray(result.fieldsWithIssues) && result.fieldsWithIssues.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {result.fieldsWithIssues.map((field, idx) => (
                             <Badge 
@@ -171,8 +157,8 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({ results, statusFi
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-600 max-w-md">
                       <div className="space-y-2">
-                        <div className="truncate" title={result.message}>
-                          {result.message}
+                        <div className="truncate" title={result.message || 'No message'}>
+                          {result.message || 'No message'}
                         </div>
                         {result.aiInsights && (
                           <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded border-l-2 border-blue-200">
@@ -182,7 +168,13 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({ results, statusFi
                       </div>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={5} className="py-8 px-6 text-center text-gray-500">
+                      No validation results to display
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
