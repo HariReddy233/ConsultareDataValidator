@@ -35,7 +35,8 @@ INSERT INTO "SAP_SubCategories" ("MainCategoryID", "SubCategoryName", "TemplateP
 (1, 'Tax Info', 'D:\Hari\DTW Excel Templates&Sample Files\Template files\Tax Info.xlsx', 'D:\Hari\DTW Excel Templates&Sample Files\Sample files\Tax Info.xlsx', 'bp_tax_info'),
 (1, 'Contact Person', 'D:\Hari\DTW Excel Templates&Sample Files\Template files\Contact Person.xlsx', 'D:\Hari\DTW Excel Templates&Sample Files\Sample files\Contact Person.xlsx', 'bp_contact_person'),
 (1, 'State Code', 'D:\Hari\DTW Excel Templates&Sample Files\Template files\State Code.xlsx', 'D:\Hari\DTW Excel Templates&Sample Files\Sample files\State Code.xlsx', 'bp_state_codes'),
-(1, 'Group Code', 'D:\Hari\DTW Excel Templates&Sample Files\Template files\Group Code.xlsx', 'D:\Hari\DTW Excel Templates&Sample Files\Sample files\Group Code.xlsx', 'bp_group_codes')
+(1, 'Group Code', 'D:\Hari\DTW Excel Templates&Sample Files\Template files\Group Code.xlsx', 'D:\Hari\DTW Excel Templates&Sample Files\Sample files\Group Code.xlsx', 'bp_group_codes'),
+(1, 'Groups', 'D:\Hari\DTW Excel Templates&Sample Files\Template files\Groups.xlsx', 'D:\Hari\DTW Excel Templates&Sample Files\Sample files\Groups.xlsx', 'Groups')
 ON CONFLICT DO NOTHING;
 
 -- Item Master Data (MainCategoryID = 2)

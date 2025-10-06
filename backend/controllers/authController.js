@@ -53,16 +53,19 @@ class AuthController {
   // Login user
   async login(req, res) {
     try {
-      const { user_email, user_password } = req.body;
+      const { user_email, user_password, identifier } = req.body;
+
+      // Support both old and new field names for backward compatibility
+      const loginIdentifier = user_email || identifier;
 
       // Validate required fields
-      if (!user_email || !user_password) {
+      if (!loginIdentifier || !user_password) {
         return res.status(400).json(
           generateResponse(false, 'Username/Email and password are required', 400, null)
         );
       }
 
-      const result = await authService.login(user_email, user_password);
+      const result = await authService.login(loginIdentifier, user_password);
 
       res.status(200).json(
         generateResponse(true, 'Login successful', 200, result)

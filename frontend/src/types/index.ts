@@ -1,16 +1,5 @@
 export interface ValidationField {
-  sapFile: string;
-  dbField: string;
-  description: string;
-  type: string;
-  length: number;
-  mandatory: boolean;
-  validValues: string[] | null;
-  relatedTable: string | null;
-  remarks: string | null;
-  instructionImagePath: string | null;
-  tableName: string | null;
-  errorDetails?: string | null;
+  [key: string]: any; // Completely dynamic - any field from database
 }
 
 export interface ValidationResult {
@@ -43,60 +32,12 @@ export interface InstructionsResponse {
   success: boolean;
   category: string;
   fields: ValidationField[];
-}
-
-export interface SampleDataResponse {
-  success: boolean;
-  category: string;
-  headers: string[];
-  sampleData: Record<string, string>[];
-}
-
-export interface ValidationField {
-  sapFile: string;
-  dbField: string;
-  description: string;
-  type: string;
-  length: number;
-  mandatory: boolean;
-  validValues: string[] | null;
-  relatedTable: string | null;
-  remarks: string | null;
-  instructionImagePath: string | null;
-  tableName: string | null;
-  errorDetails?: string | null;
-}
-
-export interface ValidationResult {
-  rowNumber: number;
-  code: string;
-  status: 'Valid' | 'Warning' | 'Error';
-  fieldsWithIssues: string[];
-  message: string;
-  aiInsights?: string;
-}
-
-export interface ValidationSummary {
-  total: number;
-  valid: number;
-  warnings: number;
-  errors: number;
-}
-
-export interface ValidationResponse {
-  success: boolean;
-  category: string;
-  summary: ValidationSummary;
-  results: ValidationResult[];
-  aiRecommendations?: string;
-  validationMethod?: 'AI' | 'Basic';
-  aiError?: string;
-}
-
-export interface InstructionsResponse {
-  success: boolean;
-  category: string;
-  fields: ValidationField[];
+  instructions?: ValidationField[]; // Add instructions property for subcategory API
+  columnNames?: string[];
+  dataTable?: string;
+  source?: string;
+  totalRecords?: number;
+  count?: number;
 }
 
 export interface SampleDataResponse {

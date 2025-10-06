@@ -9,7 +9,7 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
-  const { login, isLoading } = useAuth();
+  const { login } = useAuth();
   const [loginMethod, setLoginMethod] = useState<'username' | 'email'>('username');
   const [formData, setFormData] = useState({
     username: '',
@@ -81,13 +81,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
-        <LoadingAnimation />
-      </div>
-    );
-  }
+  // Removed loading state for instant login
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-100 flex">

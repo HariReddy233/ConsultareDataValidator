@@ -1,5 +1,5 @@
 const authService = require('../services/authService');
-const { generateResponse } = require('../utils/errorHandler');
+const { generateResponse } = require('../utils/genRes');
 
 // Middleware to authenticate JWT token
 const authenticate = async (req, res, next) => {

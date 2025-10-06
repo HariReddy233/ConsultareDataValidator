@@ -22,7 +22,8 @@ export const api = {
 
   // Get dynamic field instructions from Data_Table
   getDynamicFieldInstructions: async (subcategoryName: string): Promise<InstructionsResponse> => {
-    const response = await fetch(`${API_BASE_URL}/instructions/dynamic/${encodeURIComponent(subcategoryName)}`);
+    const cacheBuster = `?t=${Date.now()}`;
+    const response = await fetch(`${API_BASE_URL}/instructions/dynamic/${encodeURIComponent(subcategoryName)}${cacheBuster}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch dynamic field instructions for ${subcategoryName}`);
     }

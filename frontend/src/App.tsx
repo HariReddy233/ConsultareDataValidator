@@ -10,6 +10,7 @@ import { useSAPCategories } from './hooks/useSAPCategories';
 function AppContent() {
   const { categories, loading } = useSAPCategories();
   const [selectedCategory, setSelectedCategory] = useState<DataCategory>('');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Set the first category as selected when categories are loaded
   useEffect(() => {
@@ -43,7 +44,9 @@ function AppContent() {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar 
         selectedCategory={selectedCategory} 
-        onCategoryChange={setSelectedCategory} 
+        onCategoryChange={setSelectedCategory}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
       <MainContent category={selectedCategory} />
     </div>

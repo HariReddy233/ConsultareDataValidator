@@ -22,25 +22,10 @@ const FieldInstructions: React.FC<FieldInstructionsProps> = ({ category, subcate
         setLoading(true);
         setError(null);
         
-        // Fetch field instructions using dynamic API
         if (subcategory) {
-          try {
-            // Use the new dynamic API to fetch field instructions from Data_Table
-            const response = await api.getDynamicFieldInstructions(subcategory);
-            setFields(response.fields);
-          } catch (err) {
-            console.error('Error fetching dynamic field instructions:', err);
-            // Fallback to old API
-            try {
-              const response = await api.getInstructionsBySubcategory(subcategory);
-              setFields(response.fields);
-            } catch (fallbackErr) {
-              console.error('Fallback API also failed:', fallbackErr);
-              throw fallbackErr;
-            }
-          }
+          const response = await api.getInstructionsBySubcategory(subcategory);
+          setFields(response.instructions || response.fields || []);
         } else {
-          // Fallback to category-based API
           const response = await api.getInstructions(category);
           setFields(response.fields);
         }
@@ -56,117 +41,67 @@ const FieldInstructions: React.FC<FieldInstructionsProps> = ({ category, subcate
   }, [category, subcategory, refreshTrigger]);
 
 
-  const getDataTypeBadge = (type: string) => {
-    const typeColors = {
-      'AlphaNumeric': 'bg-blue-100 text-blue-800 border-blue-200',
-      'Char': 'bg-green-100 text-green-800 border-green-200',
-      'Numeric': 'bg-purple-100 text-purple-800 border-purple-200',
-      'Integer': 'bg-orange-100 text-orange-800 border-orange-200',
-      'Date': 'bg-pink-100 text-pink-800 border-pink-200',
-    };
-    
-    const colorClass = typeColors[type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800 border-gray-200';
-    
-    return (
-      <Badge className={`text-xs ${colorClass}`}>
-        {type}
-      </Badge>
-    );
-  };
-
-  const getMandatoryBadge = (mandatory: boolean) => {
-    return mandatory ? (
-      <div className="flex items-center gap-1">
-        <CheckCircle className="w-3 h-3 text-sap-error" />
-        <span className="text-xs font-medium text-sap-error">Required</span>
-      </div>
-    ) : (
-      <div className="flex items-center gap-1">
-        <AlertCircle className="w-3 h-3 text-gray-400" />
-        <span className="text-xs font-medium text-gray-500">Optional</span>
-      </div>
-    );
-  };
-
   // Get all available field keys from the first field to create dynamic columns
   const getFieldKeys = () => {
     if (fields.length === 0) return [];
-    const keys = Object.keys(fields[0]);
-    // Ensure errorDetails is always included even if not in the data
-    if (!keys.includes('errorDetails')) {
-      keys.push('errorDetails');
-    }
-    return keys;
+    return Object.keys(fields[0]);
   };
 
   // Get display name for field key
   const getFieldDisplayName = (key: string) => {
     const displayNames: { [key: string]: string } = {
-      sapFile: 'SAP Field Name',
-      dbField: 'Database Field Name',
+      sap_field_name: 'SAP Field Name',
+      db_field_name: 'Database Field Name',
       description: 'Description',
-      type: 'Data Type',
-      length: 'Field Length',
-      mandatory: 'Mandatory',
-      validValues: 'Valid Values',
-      relatedTable: 'Related Table',
+      data_type: 'Data Type',
+      field_length: 'Field Length',
+      is_mandatory: 'Mandatory',
+      valid_values: 'Valid Values',
+      related_table: 'Related Table',
       remarks: 'Remarks',
-      instructionImagePath: 'Instruction Image Path',
-      tableName: 'Table Name',
-      errorDetails: 'Error Details'
+      instruction_image_path: 'Instruction Image Path',
+      table_name: 'Table Name'
     };
     return displayNames[key] || key;
   };
 
-  // Render field value based on its type
-  const renderFieldValue = (key: string, value: any) => {
-    if (key === 'type') {
-      return getDataTypeBadge(value);
+  // Render field value with appropriate formatting
+  const renderFieldValue = (field: ValidationField, key: string) => {
+    const value = field[key];
+    
+    if (value === null || value === undefined) {
+      return <span className="text-sm text-gray-400">-</span>;
     }
-    if (key === 'mandatory') {
-      return getMandatoryBadge(value);
+    
+    if (key === 'is_mandatory') {
+      return (
+        <Badge variant={value ? 'success' : 'secondary'}>
+          {value ? 'Yes' : 'No'}
+        </Badge>
+      );
     }
-    if (key === 'validValues' && value) {
+    
+    if (key === 'valid_values' && Array.isArray(value)) {
       return (
         <div className="flex flex-wrap gap-1 max-w-xs">
-          {value.map((val: string, idx: number) => (
-            <Badge 
-              key={idx} 
-              variant="outline" 
-              className="text-xs bg-gray-100 text-gray-700 border-gray-300"
-            >
-              {val}
+          {value.map((item, idx) => (
+            <Badge key={idx} variant="outline" className="text-xs">
+              {item}
             </Badge>
           ))}
         </div>
       );
     }
-    if (key === 'errorDetails') {
-      // For now, we'll show a placeholder since we don't have error data in the field instructions
-      // This would typically come from validation results
-      return (
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-            {value || 'No errors'}
-          </span>
-        </div>
-      );
-    }
-    if (key === 'description' || key === 'remarks') {
+    
+    if (typeof value === 'string' && value.length > 50) {
       return (
         <div className="truncate max-w-md" title={value}>
-          {value || '-'}
+          <span className="text-sm text-gray-600">{value}</span>
         </div>
       );
     }
-    if (key === 'instructionImagePath') {
-      return (
-        <div className="truncate max-w-xs" title={value}>
-          <span className="text-sm text-gray-600">{value || '-'}</span>
-        </div>
-      );
-    }
-    return <span className="text-sm text-gray-600">{value || '-'}</span>;
+    
+    return <span className="text-sm text-gray-600">{String(value)}</span>;
   };
 
   if (loading) {
@@ -215,13 +150,7 @@ const FieldInstructions: React.FC<FieldInstructionsProps> = ({ category, subcate
                   <tr key={index} className="hover:bg-gray-50/50 transition-colors">
                     {getFieldKeys().map((key) => (
                       <td key={key} className="py-4 px-6 whitespace-nowrap">
-                        {key === 'sapFile' ? (
-                          <span className="text-sm font-mono text-gray-900 font-medium">
-                            {field[key as keyof typeof field]}
-                          </span>
-                        ) : (
-                          renderFieldValue(key, field[key as keyof typeof field] || null)
-                        )}
+                        {renderFieldValue(field, key)}
                       </td>
                     ))}
                   </tr>

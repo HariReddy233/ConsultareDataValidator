@@ -75,16 +75,43 @@ class Instruction {
 
   // Get instructions by category (generic method)
   static async getByCategory(category) {
-    // This is a generic method that can be overridden for specific categories
-    // For now, return all instructions from the main table
+    // Map categories to their appropriate subcategories/table_names
+    const categoryMapping = {
+      'BusinessPartnerMasterData': ['GeneralInfo', 'Address', 'ContactPerson', 'TaxInfo', 'StateCode', 'GroupCode', 'Groups'],
+      'ItemMasterData': ['ItemDetails', 'Pricing', 'Inventory', 'Categories', 'Specifications'],
+      'FinancialData': ['ChartOfAccounts', 'GLAccounts', 'CostCenters'],
+      'SetUpData': ['CompanySettings', 'SystemConfiguration', 'UserManagement'],
+      'AssetMasterData': ['AssetDetails', 'Depreciation', 'Maintenance']
+    };
+    
+    // Get the subcategories for this category
+    const subcategories = categoryMapping[category] || [];
+    
+    if (subcategories.length === 0) {
+      // If no specific mapping, return all instructions
+      const result = await pool.query(`
+        SELECT 
+          sap_field_name, db_field_name, description, data_type, 
+          field_length, is_mandatory, valid_values, related_table, 
+          remarks, instruction_image_path, table_name
+        FROM sap_bpmaster_instructions 
+        ORDER BY table_name, sap_field_name
+      `);
+      return result.rows;
+    }
+    
+    // Return instructions for the specific subcategories
+    const placeholders = subcategories.map((_, index) => `$${index + 1}`).join(',');
     const result = await pool.query(`
       SELECT 
         sap_field_name, db_field_name, description, data_type, 
         field_length, is_mandatory, valid_values, related_table, 
         remarks, instruction_image_path, table_name
-      FROM sap_bp_master_instructions 
-      ORDER BY sap_field_name
-    `);
+      FROM sap_bpmaster_instructions 
+      WHERE table_name IN (${placeholders})
+      ORDER BY table_name, sap_field_name
+    `, subcategories);
+    
     return result.rows;
   }
 

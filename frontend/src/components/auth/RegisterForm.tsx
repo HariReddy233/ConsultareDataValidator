@@ -9,7 +9,7 @@ interface RegisterFormProps {
 }
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
-  const { register, isLoading } = useAuth();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     user_name: '',
     user_email: '',
@@ -94,13 +94,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingAnimation />
-      </div>
-    );
-  }
+  // Removed loading state for instant registration
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

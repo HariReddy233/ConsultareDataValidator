@@ -147,22 +147,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (identifier: string, password: string) => {
     try {
-      setIsLoading(true);
-      
-      // Create AbortController for timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
+      // Remove loading state for instant login
       const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.LOGIN}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user_email: identifier, user_password: password }),
-        signal: controller.signal,
+        body: JSON.stringify({ identifier: identifier, user_password: password }),
       });
-      
-      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -181,22 +173,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('auth_user', JSON.stringify(userData));
       localStorage.setItem('auth_permissions', JSON.stringify([]));
 
-      // Load permissions asynchronously after login
+      // Load permissions asynchronously after login (no blocking)
       loadUserPermissions(authToken);
     } catch (error) {
       console.error('Login error:', error);
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Login request timed out. Please try again.');
-      }
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const register = async (userData: RegisterData) => {
     try {
-      setIsLoading(true);
       const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.REGISTER}`, {
         method: 'POST',
         headers: {
@@ -216,8 +202,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 

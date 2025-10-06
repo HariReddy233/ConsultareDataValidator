@@ -9,10 +9,12 @@ const sapCategoryRoutes = require('./routes/sapCategoryRoutes');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const dynamicDataRoutes = require('./routes/dynamicDataRoutes');
+const excelRoutes = require('./routes/excelRoutes');
 
 // Use routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/excel', excelRoutes);
 app.use('/', instructionRoutes);
 app.use('/', healthRoutes);
 app.use('/api/categories', sapCategoryRoutes);
@@ -72,6 +74,11 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`  GET    /api/categories/main`);
   console.log(`  GET    /api/categories/:mainCategoryId/subcategories`);
   console.log(`  GET    /api/categories/download/:subCategoryId/:fileType`);
+  console.log(`Excel Management:`);
+  console.log(`  POST   /api/excel/upload-schema`);
+  console.log(`  GET    /api/excel/schema/:category/:subcategory?`);
+  console.log(`  GET    /api/excel/data/:category/:subcategory?`);
+  console.log(`  DELETE /api/excel/table/:category/:subcategory?`);
 });
 
 // Graceful shutdown

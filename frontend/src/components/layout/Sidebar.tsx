@@ -16,6 +16,8 @@ import { useAuth } from '../../contexts/AuthContext';
 interface SidebarProps {
   selectedCategory: DataCategory;
   onCategoryChange: (category: DataCategory) => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 // Icon mapping for different category types
@@ -28,7 +30,7 @@ const getCategoryIcon = (categoryName: string) => {
   return Database; // Default icon
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange, isCollapsed = false, onToggleCollapse }) => {
   const { categories, loading, error } = useSAPCategories();
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -41,32 +43,49 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange })
   }));
 
   return (
-    <div className="w-72 bg-sap-gray-900 text-white flex flex-col shadow-lg min-h-screen">
+    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 flex flex-col shadow-sm min-h-screen transition-all duration-300`}>
       {/* Header */}
-      <div className="p-6 border-b border-gray-300">
-        <div className="flex items-center space-x-3">
-          <img 
-            src="/images/SAP_BusinessOne_R_grad_blu.png" 
-            alt="SAP Business One" 
-            className="h-12 w-200 object-contain"
-          />
+      <div className="px-4 pt-4 pb-8 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          {!isCollapsed && (
+            <img 
+              src="/images/SAP_BusinessOne_R_grad_blu.png" 
+              alt="SAP Business One" 
+              className="h-8 w-auto object-contain"
+            />
+          )}
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isCollapsed ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                )}
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation - Simplified */}
       <nav className="flex-1 p-4">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
-            <span className="ml-2 text-blue-400">Loading categories...</span>
+            <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+            {!isCollapsed && <span className="ml-2 text-gray-600">Loading...</span>}
           </div>
         ) : error ? (
-          <div className="text-red-400 text-center py-8">
-            <p>Failed to load categories</p>
-            <p className="text-sm mt-2">{error}</p>
+          <div className="text-red-500 text-center py-8">
+            <p className="text-sm">Failed to load categories</p>
+            {!isCollapsed && <p className="text-xs mt-1">{error}</p>}
           </div>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = selectedCategory === item.id;
@@ -75,18 +94,19 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange })
                 <li key={item.id}>
                   <button
                     onClick={() => onCategoryChange(item.id)}
-                    className={`w-full flex items-start px-4 py-4 rounded-lg text-left transition-all duration-200 group ${
+                    className={`w-full flex items-center px-3 py-2.5 rounded-md text-left transition-all duration-200 group ${
                       isActive
-                        ? 'bg-blue-900 text-white shadow-md'
-                        : 'text-blue-900 hover:bg-blue-800 hover:text-white'
+                        ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-500'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                     }`}
+                    title={isCollapsed ? item.label : undefined}
                   >
-                    <Icon className={`w-5 h-5 mr-3 mt-0.5 flex-shrink-0 ${
-                      isActive ? 'text-white' : 'text-blue-900 group-hover:text-white'
+                    <Icon className={`w-4 h-4 ${isCollapsed ? 'mx-auto' : 'mr-3'} flex-shrink-0 ${
+                      isActive ? 'text-blue-700' : 'text-gray-500 group-hover:text-gray-700'
                     }`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm">{item.label}</div>
-                    </div>
+                    {!isCollapsed && (
+                      <span className="text-sm font-medium truncate">{item.label}</span>
+                    )}
                   </button>
                 </li>
               );
@@ -95,28 +115,31 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange })
         )}
       </nav>
 
-      {/* User Section */}
-      <div className="p-4 border-t border-sap-gray-800">
+      {/* User Section - Back at bottom */}
+      <div className="p-4 border-t border-gray-200">
         {user && (
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-800 transition-colors duration-200"
+              className="w-full flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+              title={isCollapsed ? `${user.user_name} (${user.user_email})` : undefined}
             >
               <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
               </div>
-              <div className="flex-1 text-left">
-                <div className="text-sm font-medium text-white truncate">
-                  {user.user_name}
+              {!isCollapsed && (
+                <div className="flex-1 text-left">
+                  <div className="text-sm font-medium text-gray-900 truncate">
+                    {user.user_name}
+                  </div>
+                  <div className="text-xs text-gray-500 truncate">
+                    {user.user_email}
+                  </div>
                 </div>
-                <div className="text-xs text-blue-200 truncate">
-                  {user.user_email}
-                </div>
-              </div>
+              )}
             </button>
 
-            {showUserMenu && (
+            {showUserMenu && !isCollapsed && (
               <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                 <div className="px-4 py-2 border-b border-gray-100">
                   <div className="text-sm font-medium text-gray-900">{user.user_name}</div>
@@ -146,14 +169,6 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange })
             )}
           </div>
         )}
-        
-        <div className="flex justify-center mt-4">
-          <img 
-            src="/images/Consultare.png" 
-            alt="Consultare" 
-            className="h-6 w-auto"
-          />
-        </div>
       </div>
     </div>
   );
