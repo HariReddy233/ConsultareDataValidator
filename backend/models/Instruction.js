@@ -73,22 +73,117 @@ class Instruction {
     return result.rows[0];
   }
 
-  // Get instructions by category (generic method)
+  // Get instructions by category (generic method) - Now uses Data_Table from SAP_SubCategories
   static async getByCategory(category) {
-    // Map categories to their appropriate subcategories/table_names
-    const categoryMapping = {
-      'BusinessPartnerMasterData': ['GeneralInfo', 'Address', 'ContactPerson', 'TaxInfo', 'StateCode', 'GroupCode', 'Groups'],
-      'ItemMasterData': ['ItemDetails', 'Pricing', 'Inventory', 'Categories', 'Specifications'],
-      'FinancialData': ['ChartOfAccounts', 'GLAccounts', 'CostCenters'],
-      'SetUpData': ['CompanySettings', 'SystemConfiguration', 'UserManagement'],
-      'AssetMasterData': ['AssetDetails', 'Depreciation', 'Maintenance']
-    };
-    
-    // Get the subcategories for this category
-    const subcategories = categoryMapping[category] || [];
-    
-    if (subcategories.length === 0) {
-      // If no specific mapping, return all instructions
+    try {
+      // Get all Data_Table values for the given category from SAP_SubCategories
+      const subcategoryResult = await pool.query(`
+        SELECT DISTINCT "Data_Table" 
+        FROM "SAP_SubCategories" sc
+        JOIN "SAP_MainCategories" mc ON sc."MainCategoryID" = mc."MainCategoryID"
+        WHERE mc."MainCategoryName" = $1
+      `, [category]);
+      
+      if (subcategoryResult.rows.length === 0) {
+        // If no subcategories found, return all instructions as fallback
+        const result = await pool.query(`
+          SELECT 
+            sap_field_name, db_field_name, description, data_type, 
+            field_length, is_mandatory, valid_values, related_table, 
+            remarks, instruction_image_path, table_name
+          FROM sap_bpmaster_instructions 
+          ORDER BY table_name, sap_field_name
+        `);
+        return result.rows;
+      }
+      
+      const dataTables = subcategoryResult.rows.map(row => row.Data_Table);
+      console.log(`Found Data_Tables for category ${category}:`, dataTables);
+      
+      let allFields = [];
+      
+      // Fetch data from each individual table
+      for (const dataTable of dataTables) {
+        try {
+          // Check if the data table exists
+          const tableExistsQuery = `
+            SELECT EXISTS (
+              SELECT FROM information_schema.tables 
+              WHERE table_schema = 'public' 
+              AND table_name = $1
+            );
+          `;
+          
+          const tableExistsResult = await pool.query(tableExistsQuery, [dataTable]);
+          
+          if (!tableExistsResult.rows[0].exists) {
+            console.log(`Table ${dataTable} does not exist, skipping...`);
+            continue;
+          }
+          
+          // Get column information for the table
+          const columnsQuery = `
+            SELECT column_name, data_type, is_nullable
+            FROM information_schema.columns 
+            WHERE table_name = $1 
+            AND table_schema = 'public'
+            ORDER BY ordinal_position
+          `;
+          
+          const columnsResult = await pool.query(columnsQuery, [dataTable]);
+          const columns = columnsResult.rows.map(col => col.column_name);
+          
+          // Check if this table has the expected instruction columns
+          const hasInstructionColumns = columns.some(col => 
+            ['SAPFields', 'DataBaseField', 'Description', 'DataType', 'FieldLength', 'Mandatory'].includes(col)
+          );
+          
+          if (hasInstructionColumns) {
+            // Fetch data directly from the data table
+            const result = await pool.query(`
+              SELECT 
+                "SAPFields" as sap_field_name,
+                "DataBaseField" as db_field_name,
+                "Description" as description,
+                "DataType" as data_type,
+                "FieldLength" as field_length,
+                "Mandatory" as is_mandatory,
+                "ValidValues" as valid_values,
+                "RelatedTable" as related_table,
+                "Remarks" as remarks,
+                "InstructionImagepath" as instruction_image_path,
+                $1 as table_name
+              FROM "${dataTable}"
+              ORDER BY "SAPFields"
+            `, [dataTable]);
+            
+            allFields = allFields.concat(result.rows);
+            console.log(`Found ${result.rows.length} instructions from ${dataTable} table`);
+          } else {
+            // Fallback to sap_bpmaster_instructions table
+            const result = await pool.query(`
+              SELECT 
+                sap_field_name, db_field_name, description, data_type, 
+                field_length, is_mandatory, valid_values, related_table, 
+                remarks, instruction_image_path, table_name
+              FROM sap_bpmaster_instructions 
+              WHERE table_name = $1
+              ORDER BY sap_field_name
+            `, [dataTable]);
+            
+            allFields = allFields.concat(result.rows);
+            console.log(`Found ${result.rows.length} instructions from sap_bpmaster_instructions for ${dataTable}`);
+          }
+        } catch (tableError) {
+          console.error(`Error fetching data from ${dataTable}:`, tableError.message);
+          // Continue with other tables
+        }
+      }
+      
+      return allFields;
+    } catch (error) {
+      console.error('Error in getByCategory:', error);
+      // Fallback to returning all instructions if there's an error
       const result = await pool.query(`
         SELECT 
           sap_field_name, db_field_name, description, data_type, 
@@ -99,20 +194,6 @@ class Instruction {
       `);
       return result.rows;
     }
-    
-    // Return instructions for the specific subcategories
-    const placeholders = subcategories.map((_, index) => `$${index + 1}`).join(',');
-    const result = await pool.query(`
-      SELECT 
-        sap_field_name, db_field_name, description, data_type, 
-        field_length, is_mandatory, valid_values, related_table, 
-        remarks, instruction_image_path, table_name
-      FROM sap_bpmaster_instructions 
-      WHERE table_name IN (${placeholders})
-      ORDER BY table_name, sap_field_name
-    `, subcategories);
-    
-    return result.rows;
   }
 
   // Create instruction by category (generic method)

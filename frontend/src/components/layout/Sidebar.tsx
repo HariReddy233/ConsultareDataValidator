@@ -46,28 +46,13 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange, i
     <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 flex flex-col shadow-sm min-h-screen transition-all duration-300`}>
       {/* Header */}
       <div className="px-4 pt-4 pb-8 border-b border-gray-200">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-center">
           {!isCollapsed && (
             <img 
               src="/images/SAP_BusinessOne_R_grad_blu.png" 
               alt="SAP Business One" 
               className="h-8 w-auto object-contain"
             />
-          )}
-          {onToggleCollapse && (
-            <button
-              onClick={onToggleCollapse}
-              className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {isCollapsed ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                )}
-              </svg>
-            </button>
           )}
         </div>
       </div>
@@ -119,25 +104,43 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange, i
       <div className="p-4 border-t border-gray-200">
         {user && (
           <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-full flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-              title={isCollapsed ? `${user.user_name} (${user.user_email})` : undefined}
-            >
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
-              </div>
-              {!isCollapsed && (
-                <div className="flex-1 text-left">
-                  <div className="text-sm font-medium text-gray-900 truncate">
-                    {user.user_name}
-                  </div>
-                  <div className="text-xs text-gray-500 truncate">
-                    {user.user_email}
-                  </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex-1 flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                title={isCollapsed ? `${user.user_name} (${user.user_email})` : undefined}
+              >
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
                 </div>
+                {!isCollapsed && (
+                  <div className="flex-1 text-left">
+                    <div className="text-sm font-medium text-gray-900 truncate">
+                      {user.user_name}
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">
+                      {user.user_email}
+                    </div>
+                  </div>
+                )}
+              </button>
+              
+              {onToggleCollapse && (
+                <button
+                  onClick={onToggleCollapse}
+                  className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+                  title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                >
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {isCollapsed ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    )}
+                  </svg>
+                </button>
               )}
-            </button>
+            </div>
 
             {showUserMenu && !isCollapsed && (
               <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">

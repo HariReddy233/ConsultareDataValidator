@@ -84,64 +84,64 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   // Removed loading state for instant login
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-100 flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-100 flex flex-col lg:flex-row">
       {/* Left Panel - Welcome Section */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center px-16">
-        <div className="max-w-md">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 lg:px-16 py-8 lg:py-0">
+        <div className="max-w-lg mx-auto lg:mx-0 lg:ml-20">
           {/* Logo */}
-          <div className="flex items-center mb-8">
+          <div className="flex items-center mb-6">
             <img
               src="/images/Consultare.png"
               alt="Consultare"
-              className="h-12 w-auto object-contain"
+              className="h-10 w-auto object-contain"
             />
           </div>
 
           {/* Main Title */}
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
+          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight">
             Welcome to Your Data Validator
           </h1>
           
           {/* Description */}
-          <p className="text-lg text-gray-600 mb-8">
+          <p className="text-base text-gray-600 mb-8 leading-relaxed">
             Experience seamless productivity with our comprehensive SAP data validation platform designed for modern professionals and teams.
           </p>
 
           {/* Features */}
-          <div className="space-y-6">
-            <div className="flex items-start">
-              <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+          <div className="space-y-5">
+            <div className="flex items-start group">
+              <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-4 flex-shrink-0 group-hover:bg-blue-600 transition-colors duration-200">
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-800">Enterprise Security</h3>
-                <p className="text-gray-600">Bank-level encryption and security protocols</p>
+                <h3 className="text-base font-semibold text-gray-800 mb-1">Enterprise Security</h3>
+                <p className="text-sm text-gray-600">Bank-level encryption and security protocols</p>
               </div>
             </div>
 
-            <div className="flex items-start">
-              <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+            <div className="flex items-start group">
+              <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center mr-4 flex-shrink-0 group-hover:bg-orange-600 transition-colors duration-200">
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-800">Lightning Fast</h3>
-                <p className="text-gray-600">Optimized performance for instant access</p>
+                <h3 className="text-base font-semibold text-gray-800 mb-1">Lightning Fast</h3>
+                <p className="text-sm text-gray-600">Optimized performance for instant access</p>
               </div>
             </div>
 
-            <div className="flex items-start">
-              <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+            <div className="flex items-start group">
+              <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-4 flex-shrink-0 group-hover:bg-green-600 transition-colors duration-200">
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-800">Team Collaboration</h3>
-                <p className="text-gray-600">Work together seamlessly across all devices</p>
+                <h3 className="text-base font-semibold text-gray-800 mb-1">Team Collaboration</h3>
+                <p className="text-sm text-gray-600">Work together seamlessly across all devices</p>
               </div>
             </div>
           </div>
@@ -149,14 +149,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-8 pt-16">
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-8 lg:py-0">
         <div className="w-full max-w-sm">
           {/* Login Form Card */}
-          <div className="bg-white rounded-2xl shadow-xl p-6">
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
             {/* Header */}
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Sign In</h2>
-              <p className="text-gray-600 text-sm">Access your account and continue your journey</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign In</h2>
+              <p className="text-sm text-gray-600">Access your account and continue your journey</p>
             </div>
 
             {/* Login Method Tabs */}
@@ -164,10 +164,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               <button
                 type="button"
                 onClick={() => setLoginMethod('username')}
-                className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200 ${
                   loginMethod === 'username'
                     ? 'bg-blue-500 text-white shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }`}
               >
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -178,10 +178,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               <button
                 type="button"
                 onClick={() => setLoginMethod('email')}
-                className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200 ${
                   loginMethod === 'email'
                     ? 'bg-blue-500 text-white shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }`}
               >
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -192,7 +192,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* General Error */}
               {errors.general && (
                 <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
@@ -208,12 +208,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     {loginMethod === 'email' ? (
-                      <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                         <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                       </svg>
                     ) : (
-                      <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                       </svg>
                     )}
@@ -223,8 +223,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
                     name={loginMethod === 'email' ? 'email' : 'username'}
                     value={loginMethod === 'email' ? formData.email : formData.username}
                     onChange={handleInputChange}
-                    className={`w-full pl-10 pr-3 py-3 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      errors[loginMethod] ? 'border-red-300' : 'border-gray-300'
+                    className={`w-full pl-10 pr-3 py-3 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${
+                      errors[loginMethod] ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 hover:border-gray-400'
                     }`}
                     placeholder={`Enter your ${loginMethod}`}
                     required
@@ -240,7 +240,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">PASSWORD</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                     </svg>
                   </div>
@@ -249,8 +249,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    className={`w-full pl-10 pr-12 py-3 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      errors.password ? 'border-red-300' : 'border-gray-300'
+                    className={`w-full pl-10 pr-10 py-3 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${
+                      errors.password ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 hover:border-gray-400'
                     }`}
                     placeholder="Enter your password"
                     required
@@ -258,9 +258,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-gray-50 rounded-r-lg transition-colors duration-200"
                   >
-                    <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors duration-200" fill="currentColor" viewBox="0 0 20 20">
                       {showPassword ? (
                         <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
                       ) : (
@@ -284,16 +284,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
                     id="remember-me"
                     name="remember-me"
                     type="checkbox"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors duration-200"
                   />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 cursor-pointer">
                     Remember me
                   </label>
                 </div>
 
                 <button
                   type="button"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200 hover:underline"
                   onClick={(e) => {
                     e.preventDefault();
                     // TODO: Implement forgot password
@@ -320,7 +320,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               </button>
 
               {/* Divider */}
-              <div className="relative">
+              <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-300" />
                 </div>
@@ -332,9 +332,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               {/* Google Sign-in Button */}
               <button
                 type="button"
-                className="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg border border-gray-300 transition-colors duration-200 flex items-center justify-center"
+                className="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors duration-200 flex items-center justify-center"
               >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -351,7 +351,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
                     <button
                       type="button"
                       onClick={onSwitchToRegister}
-                      className="font-medium text-blue-600 hover:text-blue-500"
+                      className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200 hover:underline"
                     >
                       Sign up here
                     </button>

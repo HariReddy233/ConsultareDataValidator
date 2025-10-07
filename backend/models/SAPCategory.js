@@ -154,6 +154,17 @@ class SAPCategory {
     const result = await pool.query(query, values);
     return result.rows[0];
   }
+
+  // Get subcategory name by ID
+  static async getSubcategoryName(subCategoryId) {
+    const result = await pool.query(`
+      SELECT "SubCategoryName"
+      FROM "SAP_SubCategories"
+      WHERE "SubCategoryID" = $1
+    `, [subCategoryId]);
+    
+    return result.rows[0]?.SubCategoryName || null;
+  }
 }
 
 module.exports = SAPCategory;

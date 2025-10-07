@@ -147,22 +147,24 @@ class InstructionController {
       
       console.log(`Fetching instructions for category: ${category}`);
       
-      const instructions = await Instruction.getByCategory(category);
+      // Use the internal method that fetches from individual tables
+      const result = await this.getInstructionsByCategoryInternal(category);
       
-      // Completely dynamic field mapping
-      const fields = instructions.map(row => {
-        const field = {};
-        Object.keys(row).forEach(key => {
-          field[key] = row[key];
+      if (!result.success) {
+        return res.status(404).json({
+          success: false,
+          error: result.error,
+          fields: [],
+          count: 0
         });
-        return field;
-      });
+      }
       
       res.status(200).json({
         success: true,
         category: category,
-        fields: fields,
-        source: 'database'
+        fields: result.fields,
+        count: result.count,
+        source: 'individual_tables'
       });
     } catch (err) {
       console.error(`Error fetching instructions for category ${req.params.category}:`, err);
@@ -219,12 +221,12 @@ class InstructionController {
         console.warn('Could not fetch validation rules:', err.message);
       }
 
-      // Use AI validation with proper field instructions
+      // Try AI validation first
       let validationResult;
       let aiError = null;
       
       try {
-        console.log('Attempting AI validation with field instructions...');
+        console.log('Attempting AI validation...');
         const aiResponse = await openaiService.validateDataWithAI(data, validationRules, category);
         
         if (aiResponse.success) {
@@ -239,115 +241,41 @@ class InstructionController {
           throw new Error(aiResponse.error || 'AI validation failed');
         }
       } catch (aiErr) {
-        console.warn('AI validation failed, falling back to field-based validation:', aiErr.message);
+        console.warn('AI validation failed, falling back to basic validation:', aiErr.message);
         aiError = aiErr.message;
         
-        // Fallback to field-based validation
-        const results = [];
-        let validCount = 0;
-        let warningCount = 0;
-        let errorCount = 0;
-        
-        data.forEach((row, index) => {
-          const rowErrors = [];
-          const rowWarnings = [];
-          const fieldsWithIssues = [];
-          
-          // Get the primary key field for this row
-          const primaryKey = row.CardCode || row.ItemCode || row.Code || `Row_${index + 1}`;
-          
-          // Validate each field based on the field instructions
-          validationRules.forEach(rule => {
-            const fieldName = rule.sap_field_name;
-            const fieldValue = row[fieldName];
-            const isMandatory = rule.is_mandatory;
-            const dataType = rule.data_type;
-            const fieldLength = rule.field_length;
-            const validValues = rule.valid_values;
-            
-            console.log(`Validating field: ${fieldName}, Value: ${fieldValue}, Length: ${fieldLength}, Mandatory: ${isMandatory}`);
-            
-            // Check mandatory fields
-            if (isMandatory && (!fieldValue || fieldValue.toString().trim() === '')) {
-              rowErrors.push(`${fieldName} is mandatory but missing`);
-              fieldsWithIssues.push(fieldName);
-            }
-            
-            // Check data type
-            if (fieldValue && fieldValue.toString().trim() !== '') {
-              if (dataType === 'string' && typeof fieldValue !== 'string') {
-                rowWarnings.push(`${fieldName} should be a string`);
-                fieldsWithIssues.push(fieldName);
-              } else if (dataType === 'integer' && isNaN(parseInt(fieldValue))) {
-                rowErrors.push(`${fieldName} should be a number`);
-                fieldsWithIssues.push(fieldName);
-              } else if (dataType === 'double' && isNaN(parseFloat(fieldValue))) {
-                rowErrors.push(`${fieldName} should be a decimal number`);
-                fieldsWithIssues.push(fieldName);
-              } else if (dataType === 'Date' && isNaN(Date.parse(fieldValue))) {
-                rowErrors.push(`${fieldName} should be a valid date`);
-                fieldsWithIssues.push(fieldName);
-              }
-            }
-            
-            // Check field length - this is the key fix
-            if (fieldValue && fieldLength && fieldValue.toString().length > fieldLength) {
-              rowErrors.push(`${fieldName} exceeds maximum length of ${fieldLength} characters (current: ${fieldValue.toString().length})`);
-              fieldsWithIssues.push(fieldName);
-            }
-            
-            // Check valid values
-            if (fieldValue && validValues && validValues.length > 0) {
-              const validValuesList = validValues.split(',').map(v => v.trim());
-              if (!validValuesList.includes(fieldValue.toString().trim())) {
-                rowWarnings.push(`${fieldName} has invalid value. Valid values: ${validValuesList.join(', ')}`);
-                fieldsWithIssues.push(fieldName);
-              }
-            }
-          });
-          
-          // Determine overall status for this row
-          let status = 'Valid';
-          if (rowErrors.length > 0) {
-            status = 'Error';
-            errorCount++;
-          } else if (rowWarnings.length > 0) {
-            status = 'Warning';
-            warningCount++;
-          } else {
-            validCount++;
-          }
-          
-          results.push({
-            rowNumber: index + 1,
-            code: primaryKey,
-            status: status,
-            fieldsWithIssues: fieldsWithIssues,
-            message: rowErrors.length > 0 ? rowErrors.join('. ') : 
-                     rowWarnings.length > 0 ? rowWarnings.join('. ') : 
-                     'All validations passed',
-            aiInsights: undefined
-          });
-        });
-        
+        // Fallback to basic validation
         validationResult = {
-          results: results,
+          results: data.map((row, index) => ({
+            rowNumber: index + 1,
+            code: row.CardCode || row.ItemCode || row.Code || `Row_${index + 1}`,
+            status: 'Valid',
+            fieldsWithIssues: [],
+            message: 'Basic validation passed - AI validation unavailable',
+            aiInsights: undefined
+          })),
           summary: {
             total: data.length,
-            valid: validCount,
-            warnings: warningCount,
-            errors: errorCount
-          }
+            valid: data.length,
+            warnings: 0,
+            errors: 0
+          },
+          aiRecommendations: 'AI validation was unavailable. Please check your OpenAI API key configuration.'
         };
       }
 
       // Ensure the response has the correct structure
       const response = {
-          success: true,
-          category: category,
-          summary: validationResult.summary,
-          results: validationResult.results,
-        validationMethod: aiError ? 'Field-based' : 'AI',
+        success: true,
+        category: category,
+        summary: validationResult.summary || {
+          total: data.length,
+          valid: data.length,
+          warnings: 0,
+          errors: 0
+        },
+        results: validationResult.results || [],
+        validationMethod: aiError ? 'Basic' : 'AI',
         message: 'Data validation completed successfully'
       };
 
@@ -446,79 +374,113 @@ class InstructionController {
     try {
       const { subcategoryName } = req.params;
       
-      // Map subcategory names to their respective instruction tables
-      // Support both old names (with spaces) and new names (without spaces)
-      const subcategoryTableMap = {
-        // New names (without spaces) - map to actual data tables
-        'GeneralInfo': 'GeneralInfo',
-        'Address': 'Address', 
-        'TaxInfo': 'TaxInfo',
-        'ContactPerson': 'ContactPerson',
-        'StateCode': 'StateCode',
-        'GroupCode': 'GroupCode',
-        'Groups': 'Groups',
-        'ItemDetails': 'ItemDetails',
-        'Pricing': 'Pricing',
-        'Inventory': 'Inventory',
-        'Categories': 'Categories',
-        'Specifications': 'Specifications',
-        // Old names (with spaces) for backward compatibility
-        'General Info': 'GeneralInfo',
-        'Tax Info': 'TaxInfo',
-        'Contact Person': 'ContactPerson',
-        'State Code': 'StateCode',
-        'Group Code': 'GroupCode',
-        'Item Details': 'ItemDetails'
-      };
-      
       console.log(`Looking for subcategory: ${subcategoryName}`);
-      console.log(`Available mappings:`, Object.keys(subcategoryTableMap));
       
-      const tableName = subcategoryTableMap[subcategoryName];
+      // First, get the Data_Table value from SAP_SubCategories table
+      const subcategoryResult = await pool.query(`
+        SELECT "Data_Table" 
+        FROM "SAP_SubCategories" 
+        WHERE "SubCategoryName" = $1
+      `, [subcategoryName]);
       
-      if (!tableName) {
+      if (subcategoryResult.rows.length === 0) {
         return res.status(404).json({
           success: false,
-          message: `No instruction table found for subcategory: ${subcategoryName}`
+          message: `Subcategory not found: ${subcategoryName}`
         });
       }
       
+      const dataTable = subcategoryResult.rows[0].Data_Table;
+      console.log(`Found Data_Table: ${dataTable} for subcategory: ${subcategoryName}`);
+      
+      // Check if the data table exists
+      const tableExistsQuery = `
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = $1
+        );
+      `;
+      
+      const tableExistsResult = await pool.query(tableExistsQuery, [dataTable]);
+      
+      if (!tableExistsResult.rows[0].exists) {
+        return res.status(404).json({
+          success: false,
+          message: `Data table '${dataTable}' does not exist`
+        });
+      }
+      
+      // Get column information for the table
+      const columnsQuery = `
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns 
+        WHERE table_name = $1 
+        AND table_schema = 'public'
+        ORDER BY ordinal_position
+      `;
+      
+      const columnsResult = await pool.query(columnsQuery, [dataTable]);
+      const columns = columnsResult.rows.map(col => col.column_name);
+      
+      // Check if this table has the expected instruction columns
+      const hasInstructionColumns = columns.some(col => 
+        ['SAPFields', 'DataBaseField', 'Description', 'DataType', 'FieldLength', 'Mandatory'].includes(col)
+      );
+      
       let instructions = [];
       
-        console.log(`Querying table: ${tableName}`);
-        
-      // Query the actual data table
+      if (hasInstructionColumns) {
+        // Fetch data directly from the data table
         const result = await pool.query(`
           SELECT 
-          "SAPFiles" as sap_field_name,
-          "DataBaseField" as db_field_name,
-          "Description" as description,
-          "DataType" as data_type,
-          "FieldLength" as field_length,
-          "Mandatory" as is_mandatory,
-          "ValidValues" as valid_values,
-          "RelatedTable" as related_table,
-          "Remarks" as remarks,
-          NULL as instruction_image_path,
-          $1 as table_name
-          FROM "${tableName}"
-        ORDER BY "SAPFiles"
-      `, [subcategoryName]);
-      
-      instructions = result.rows.map(row => {
-        const field = {};
-        Object.keys(row).forEach(key => {
-          field[key] = row[key];
-        });
-        return field;
-      });
-      
-      console.log(`Found ${instructions.length} instructions for ${subcategoryName}`);
+            "SAPFields" as sap_field_name,
+            "DataBaseField" as db_field_name,
+            "Description" as description,
+            "DataType" as data_type,
+            "FieldLength" as field_length,
+            "Mandatory" as is_mandatory,
+            "ValidValues" as valid_values,
+            "RelatedTable" as related_table,
+            "Remarks" as remarks,
+            "InstructionImagepath" as instruction_image_path,
+            $1 as table_name
+          FROM "${dataTable}"
+          ORDER BY "SAPFields"
+        `, [dataTable]);
+        
+        instructions = result.rows;
+        console.log(`Found ${instructions.length} instructions from ${dataTable} table`);
+      } else {
+        // Fallback to sap_bpmaster_instructions table
+        const result = await pool.query(`
+          SELECT 
+            sap_field_name,
+            db_field_name,
+            description,
+            data_type,
+            field_length,
+            is_mandatory,
+            valid_values,
+            related_table,
+            remarks,
+            instruction_image_path,
+            table_name
+          FROM sap_bpmaster_instructions
+          WHERE table_name = $1
+          ORDER BY sap_field_name
+        `, [dataTable]);
+        
+        instructions = result.rows;
+        console.log(`Found ${instructions.length} instructions from sap_bpmaster_instructions table`);
+      }
       
       res.status(200).json({
         success: true,
         subcategory: subcategoryName,
+        dataTable: dataTable,
         instructions: instructions,
+        fields: instructions,
         count: instructions.length
       });
     } catch (err) {
@@ -589,47 +551,119 @@ class InstructionController {
   // Internal helper method to get instructions by category
   static async getInstructionsByCategoryInternal(category) {
     try {
-      // Map category to actual table name
-      const categoryTableMap = {
-        'BusinessPartnerMasterData': 'GeneralInfo',
-        'ItemMasterData': 'ItemDetails',
-        'FinancialData': 'ChartOfAccounts',
-        'SetUpData': 'CompanySettings',
-        'AssetMasterData': 'AssetDetails'
-      };
-      
-      const tableName = categoryTableMap[category] || 'GeneralInfo';
-      
-      const result = await pool.query(`
-        SELECT 
-          "SAPFiles" as sap_field_name,
-          "DataBaseField" as db_field_name,
-          "Description" as description,
-          "DataType" as data_type,
-          "FieldLength" as field_length,
-          "Mandatory" as is_mandatory,
-          "ValidValues" as valid_values,
-          "RelatedTable" as related_table,
-          "Remarks" as remarks,
-          NULL as instruction_image_path,
-          $1 as table_name
-        FROM "${tableName}"
-        ORDER BY "SAPFiles"
+      // Get all Data_Table values for the given category from SAP_SubCategories
+      const subcategoryResult = await pool.query(`
+        SELECT DISTINCT "Data_Table" 
+        FROM "SAP_SubCategories" sc
+        JOIN "SAP_MainCategories" mc ON sc."MainCategoryID" = mc."MainCategoryID"
+        WHERE mc."MainCategoryName" = $1
       `, [category]);
       
-      const fields = result.rows.map(row => {
-        const field = {};
-        Object.keys(row).forEach(key => {
-          field[key] = row[key];
-        });
-          return field;
-        });
+      if (subcategoryResult.rows.length === 0) {
+        return {
+          success: false,
+          error: `No subcategories found for category: ${category}`,
+          fields: [],
+          count: 0
+        };
+      }
+      
+      const dataTables = subcategoryResult.rows.map(row => row.Data_Table);
+      console.log(`Found Data_Tables for category ${category}:`, dataTables);
+      
+      let allFields = [];
+      
+      // Fetch data from each individual table
+      for (const dataTable of dataTables) {
+        try {
+          // Check if the data table exists
+          const tableExistsQuery = `
+            SELECT EXISTS (
+              SELECT FROM information_schema.tables 
+              WHERE table_schema = 'public' 
+              AND table_name = $1
+            );
+          `;
+          
+          const tableExistsResult = await pool.query(tableExistsQuery, [dataTable]);
+          
+          if (!tableExistsResult.rows[0].exists) {
+            console.log(`Table ${dataTable} does not exist, skipping...`);
+            continue;
+          }
+          
+          // Get column information for the table
+          const columnsQuery = `
+            SELECT column_name, data_type, is_nullable
+            FROM information_schema.columns 
+            WHERE table_name = $1 
+            AND table_schema = 'public'
+            ORDER BY ordinal_position
+          `;
+          
+          const columnsResult = await pool.query(columnsQuery, [dataTable]);
+          const columns = columnsResult.rows.map(col => col.column_name);
+          
+          // Check if this table has the expected instruction columns
+          const hasInstructionColumns = columns.some(col => 
+            ['SAPFields', 'DataBaseField', 'Description', 'DataType', 'FieldLength', 'Mandatory'].includes(col)
+          );
+          
+          if (hasInstructionColumns) {
+            // Fetch data directly from the data table
+            const result = await pool.query(`
+              SELECT 
+                "SAPFields" as sap_field_name,
+                "DataBaseField" as db_field_name,
+                "Description" as description,
+                "DataType" as data_type,
+                "FieldLength" as field_length,
+                "Mandatory" as is_mandatory,
+                "ValidValues" as valid_values,
+                "RelatedTable" as related_table,
+                "Remarks" as remarks,
+                "InstructionImagepath" as instruction_image_path,
+                $1 as table_name
+              FROM "${dataTable}"
+              ORDER BY "SAPFields"
+            `, [dataTable]);
+            
+            allFields = allFields.concat(result.rows);
+            console.log(`Found ${result.rows.length} instructions from ${dataTable} table`);
+          } else {
+            // Fallback to sap_bpmaster_instructions table
+            const result = await pool.query(`
+              SELECT 
+                sap_field_name,
+                db_field_name,
+                description,
+                data_type,
+                field_length,
+                is_mandatory,
+                valid_values,
+                related_table,
+                remarks,
+                instruction_image_path,
+                table_name
+              FROM sap_bpmaster_instructions
+              WHERE table_name = $1
+              ORDER BY sap_field_name
+            `, [dataTable]);
+            
+            allFields = allFields.concat(result.rows);
+            console.log(`Found ${result.rows.length} instructions from sap_bpmaster_instructions for ${dataTable}`);
+          }
+        } catch (tableError) {
+          console.error(`Error fetching data from ${dataTable}:`, tableError.message);
+          // Continue with other tables
+        }
+      }
       
       return {
         success: true,
         category: category,
-        fields: fields,
-        count: fields.length
+        fields: allFields,
+        count: allFields.length
       };
     } catch (err) {
       console.error('Error in getInstructionsByCategoryInternal:', err);

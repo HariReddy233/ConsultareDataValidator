@@ -10,7 +10,7 @@ import AIHelper from '../ui/AIHelper';
 import LoadingAnimation from '../ui/LoadingAnimation';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
-import { Upload, Download, FileText, Filter, Plus, Loader2 } from 'lucide-react';
+import { Upload, Download, FileText, Filter, Plus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface MainContentProps {
@@ -35,6 +35,7 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
   const [isClearingOutput, setIsClearingOutput] = useState(false);
   const [mainCategories, setMainCategories] = useState<SAPMainCategory[]>([]);
   const [loadingMainCategories, setLoadingMainCategories] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { categories, downloadFile } = useSAPCategories();
@@ -104,17 +105,13 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
     loadSubcategories();
   }, [category, categories, mainCategories]);
 
-  // Trigger dropdown highlight on page load and set default subcategory
+  // Trigger dropdown highlight on page load
   useEffect(() => {
     if (subcategories && subcategories.length > 0 && !hasInteractedWithDropdown) {
       setShowDropdownHighlight(true);
       
-      // Set "Groups" as default subcategory if available
-      const groupsSubcategory = subcategories.find(sub => sub.SubCategoryName === 'Groups');
-      if (groupsSubcategory && !selectedDataCategory) {
-        setSelectedDataCategory('Groups');
-        setSelectedSubCategory(groupsSubcategory);
-      }
+      // Don't auto-select any subcategory - let user choose
+      // Keep selectedDataCategory empty to show "Select Category" as default
     }
   }, [subcategories, hasInteractedWithDropdown, selectedDataCategory]);
 
@@ -181,6 +178,7 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
     console.log('handleFileUpload called with:', { dataLength: data.length, fileName: file.name });
     setFileData(data);
     setUploadedFile(file);
+    setIsValidating(true);
 
     try {
       console.log('Calling API validation for category:', category);
@@ -189,6 +187,8 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
       setValidationResults(result);
     } catch (error) {
       console.error('Validation failed:', error);
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -220,6 +220,14 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
 
   const handleUploadClick = () => {
     console.log('Upload button clicked');
+    
+    // Clear validation results if any are already loaded
+    if (validationResults) {
+      setValidationResults(null);
+      setFileData([]);
+      setUploadedFile(null);
+    }
+    
     console.log('File input ref:', fileInputRef.current);
     fileInputRef.current?.click();
   };
@@ -401,7 +409,7 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
               </button>
               <button
                 onClick={() => setShowExcelUpload(true)}
-                className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white text-gray-600 hover:bg-green-800 hover:text-white border border-gray-300 hover:border-green-800 flex items-center gap-2"
+                className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white text-gray-600 hover:bg-blue-800 hover:text-white border border-gray-300 hover:border-blue-800 flex items-center gap-2"
               >
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -412,7 +420,7 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
           )}
           
           {/* Validation Summary - only show when on upload tab */}
-          {activeTab === 'upload' && validationResults && (
+          {activeTab === 'upload' && validationResults && !isValidating && (
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <span className="text-gray-600">Total Records:</span>
@@ -442,6 +450,9 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
             {/* Show loading animation while subcategories are loading */}
             {loadingSubcategories ? (
               <LoadingAnimation message="Loading categories..." />
+            ) : isValidating ? (
+              /* Show validation loading state */
+              <LoadingAnimation message="Please wait the data is validating" />
             ) : (
               /* AI Helper - Show in empty content area or when no validation results */
               (!uploadedFile || !validationResults) && (
@@ -456,7 +467,7 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
             )}
             
             {/* Validation Results */}
-            {validationResults && !isClearingOutput && (
+            {validationResults && !isClearingOutput && !isValidating && (
               <div className={`space-y-2 transition-opacity duration-300 ${isClearingOutput ? 'opacity-0' : 'opacity-100'}`}>
                 {/* Filter and Actions */}
                 <div className="flex items-center justify-between bg-white p-2 rounded-lg border">
