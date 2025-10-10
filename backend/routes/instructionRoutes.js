@@ -22,5 +22,6 @@ router.get('/download-sample/:category', checkDatabaseConnection, InstructionCon
 // Debug routes
 router.get('/debug/tables', checkDatabaseConnection, InstructionController.getTableNames);
 router.get('/debug/table-structure/:tableName', checkDatabaseConnection, InstructionController.getTableStructure);
+router.get('/debug/categories', checkDatabaseConnection, InstructionController.getAvailableCategories);
 
 module.exports = router;

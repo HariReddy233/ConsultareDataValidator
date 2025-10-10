@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
-import LoadingAnimation from '../ui/LoadingAnimation';
 
 interface RegisterFormProps {
   onSwitchToLogin?: () => void;
@@ -117,7 +114,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
         </div>
 
         {/* Register Form */}
-        <Card className="p-8">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* General Error */}
             {errors.general && (
@@ -290,9 +287,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
             </div>
 
             {/* Submit Button */}
-            <Button
+            <button
               type="submit"
-              className="w-full"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200 flex items-center justify-center"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -303,7 +300,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
               ) : (
                 'Create Account'
               )}
-            </Button>
+            </button>
 
             {/* Login Link */}
             {onSwitchToLogin && (
@@ -321,7 +318,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
               </div>
             )}
           </form>
-        </Card>
+        </div>
 
         {/* Footer */}
         <div className="text-center">

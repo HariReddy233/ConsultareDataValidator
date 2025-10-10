@@ -73,20 +73,30 @@ class AuthService {
   // Login user
   async login(identifier, password) {
     try {
+      console.log('Login attempt for identifier:', identifier);
+      
       // Find user by email, username, or phone
       const user = await userService.findUserByMultiple(identifier);
       if (!user) {
+        console.log('User not found for identifier:', identifier);
         throw new Error('Invalid credentials');
       }
 
+      console.log('User found:', user.user_email, 'Active:', user.is_active);
+
       // Check if user is active
       if (!user.is_active) {
+        console.log('User account is deactivated');
         throw new Error('Account is deactivated');
       }
 
       // Compare password
+      console.log('Comparing password...');
       const isPasswordValid = await this.comparePassword(password, user.user_password);
+      console.log('Password valid:', isPasswordValid);
+      
       if (!isPasswordValid) {
+        console.log('Password comparison failed');
         throw new Error('Invalid credentials');
       }
 
@@ -100,13 +110,43 @@ class AuthService {
 
       const token = this.generateToken(tokenPayload);
 
+      // Get role and department names for display
+      let roleName = user.user_role;
+      let departmentName = user.user_department;
+      
+      try {
+        if (user.user_role) {
+          const role = await userService.getRoleById(user.user_role);
+          if (role) {
+            roleName = role.role_name;
+          }
+        }
+        
+        if (user.user_department) {
+          const department = await userService.getDepartmentById(user.user_department);
+          if (department) {
+            departmentName = department.department_name;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching role/department names:', error);
+        // Continue with IDs if names can't be fetched
+      }
+
       // Remove password from user object
       delete user.user_password;
+
+      // Add role and department names to user object
+      const userWithNames = {
+        ...user,
+        role_name: roleName,
+        department_name: departmentName
+      };
 
       // Return basic user data and token immediately
       // Permissions will be loaded separately after login
       return {
-        user,
+        user: userWithNames,
         token,
         permissions: [] // Empty initially, will be loaded by frontend
       };

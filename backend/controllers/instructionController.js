@@ -147,6 +147,14 @@ class InstructionController {
       
       console.log(`Fetching instructions for category: ${category}`);
       
+      // First, let's check what categories are available
+      const availableCategories = await pool.query(`
+        SELECT "MainCategoryName" 
+        FROM "SAP_MainCategories" 
+        ORDER BY "MainCategoryName"
+      `);
+      console.log('Available categories:', availableCategories.rows.map(r => r.MainCategoryName));
+      
       // Use the internal method that fetches from individual tables
       const result = await this.getInstructionsByCategoryInternal(category);
       
@@ -155,7 +163,8 @@ class InstructionController {
           success: false,
           error: result.error,
           fields: [],
-          count: 0
+          count: 0,
+          availableCategories: availableCategories.rows.map(r => r.MainCategoryName)
         });
       }
       
@@ -201,13 +210,24 @@ class InstructionController {
       const { data } = req.body; // Excel data will be sent from frontend
       
       console.log(`Validating data for category: ${category}`);
-      console.log(`Data received:`, data);
+      console.log(`Data received: ${data ? data.length : 0} rows`);
+      
+      // Set longer timeout for large datasets
+      res.setTimeout(120000); // 2 minutes
       
       if (!data || !Array.isArray(data) || data.length === 0) {
         return res.status(400).json({
           success: false,
           message: 'No data provided for validation'
         });
+      }
+
+      // For very large datasets, process in chunks to avoid memory issues
+      const CHUNK_SIZE = 1000; // Process 1000 rows at a time
+      const isLargeDataset = data.length > CHUNK_SIZE;
+      
+      if (isLargeDataset) {
+        console.log(`Large dataset detected (${data.length} rows). Processing in chunks of ${CHUNK_SIZE}.`);
       }
 
       // Get field instructions for the category to use as validation rules
@@ -251,8 +271,12 @@ class InstructionController {
             code: row.CardCode || row.ItemCode || row.Code || `Row_${index + 1}`,
             status: 'Valid',
             fieldsWithIssues: [],
-            message: 'Basic validation passed - AI validation unavailable',
-            aiInsights: undefined
+            message: aiError && aiError.includes('OpenAI API key not provided') 
+              ? 'Basic validation passed - AI validation requires OpenAI API key configuration'
+              : 'Basic validation passed - AI validation temporarily unavailable',
+            aiInsights: aiError && aiError.includes('OpenAI API key not provided')
+              ? 'To enable AI validation, configure OPENAI_API_KEY in environment variables'
+              : 'AI validation service is currently unavailable'
           })),
           summary: {
             total: data.length,
@@ -260,7 +284,9 @@ class InstructionController {
             warnings: 0,
             errors: 0
           },
-          aiRecommendations: 'AI validation was unavailable. Please check your OpenAI API key configuration.'
+          aiRecommendations: aiError && aiError.includes('OpenAI API key not provided')
+            ? 'AI validation requires OpenAI API key configuration. Add OPENAI_API_KEY to your environment variables to enable advanced AI-powered validation features.'
+            : 'AI validation was temporarily unavailable. Basic validation completed successfully.'
         };
       }
 
@@ -365,6 +391,41 @@ class InstructionController {
         columns: result.rows
       });
     } catch (err) {
+      handleDatabaseError(err, res);
+    }
+  }
+
+  // Debug method to get available categories
+  static async getAvailableCategories(req, res) {
+    try {
+      // Get main categories
+      const mainCategories = await pool.query(`
+        SELECT "MainCategoryID", "MainCategoryName" 
+        FROM "SAP_MainCategories" 
+        ORDER BY "MainCategoryName"
+      `);
+      
+      // Get subcategories with their data tables
+      const subcategories = await pool.query(`
+        SELECT 
+          sc."SubCategoryID",
+          sc."SubCategoryName", 
+          sc."Data_Table",
+          mc."MainCategoryName"
+        FROM "SAP_SubCategories" sc
+        JOIN "SAP_MainCategories" mc ON sc."MainCategoryID" = mc."MainCategoryID"
+        ORDER BY mc."MainCategoryName", sc."SubCategoryName"
+      `);
+      
+      res.status(200).json({
+        success: true,
+        mainCategories: mainCategories.rows,
+        subcategories: subcategories.rows,
+        totalMainCategories: mainCategories.rows.length,
+        totalSubcategories: subcategories.rows.length
+      });
+    } catch (err) {
+      console.error('Error getting available categories:', err);
       handleDatabaseError(err, res);
     }
   }

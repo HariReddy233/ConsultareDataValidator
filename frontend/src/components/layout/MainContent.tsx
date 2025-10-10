@@ -10,7 +10,7 @@ import AIHelper from '../ui/AIHelper';
 import LoadingAnimation from '../ui/LoadingAnimation';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
-import { Upload, Download, FileText, Filter, Plus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Upload, Download, FileText, Filter, Plus, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface MainContentProps {
@@ -36,6 +36,8 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
   const [mainCategories, setMainCategories] = useState<SAPMainCategory[]>([]);
   const [loadingMainCategories, setLoadingMainCategories] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [validationProgress, setValidationProgress] = useState({ current: 0, total: 0, percentage: 0 });
+  const [isLargeDataset, setIsLargeDataset] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { categories, downloadFile } = useSAPCategories();
@@ -146,7 +148,7 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
 
   const getCategoryDescription = (category: DataCategory) => {
     // Return a generic description for all categories
-    return 'Upload for comprehensive field validation.';
+    return '';
   };
 
   // Handle subcategory selection
@@ -179,17 +181,100 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
     setFileData(data);
     setUploadedFile(file);
     setIsValidating(true);
+    setValidationProgress({ current: 0, total: 0, percentage: 0 });
+
+    // Check if it's a large dataset (more than 500 rows)
+    const LARGE_DATASET_THRESHOLD = 500;
+    const isLarge = data.length > LARGE_DATASET_THRESHOLD;
+    setIsLargeDataset(isLarge);
 
     try {
-      console.log('Calling API validation for category:', category);
+      if (isLarge) {
+        console.log(`Large dataset detected (${data.length} rows). Processing in batches...`);
+        await handleBatchValidation(data);
+      } else {
+        console.log('Small dataset, processing normally...');
       const result = await api.validateData(category, data);
       console.log('Validation result:', result);
       setValidationResults(result);
+      }
     } catch (error) {
       console.error('Validation failed:', error);
     } finally {
       setIsValidating(false);
     }
+  };
+
+  const handleBatchValidation = async (data: any[]) => {
+    const BATCH_SIZE = 500;
+    const totalBatches = Math.ceil(data.length / BATCH_SIZE);
+    const allResults: any[] = [];
+    let totalValid = 0;
+    let totalWarnings = 0;
+    let totalErrors = 0;
+
+    console.log(`Processing ${data.length} rows in ${totalBatches} batches of ${BATCH_SIZE} rows each`);
+
+    for (let i = 0; i < totalBatches; i++) {
+      const start = i * BATCH_SIZE;
+      const end = Math.min(start + BATCH_SIZE, data.length);
+      const batch = data.slice(start, end);
+      
+      console.log(`Processing batch ${i + 1}/${totalBatches} (rows ${start + 1}-${end})`);
+      
+      // Update progress
+      const percentage = Math.round(((i + 1) / totalBatches) * 100);
+      setValidationProgress({
+        current: i + 1,
+        total: totalBatches,
+        percentage: percentage
+      });
+
+      try {
+        // Validate this batch
+        const batchResult = await api.validateData(category, batch);
+        
+        // Adjust row numbers to match original data
+        const adjustedResults = batchResult.results.map((result: any) => ({
+          ...result,
+          rowNumber: result.rowNumber + start
+        }));
+
+        allResults.push(...adjustedResults);
+        
+        // Update summary counts
+        totalValid += batchResult.summary.valid;
+        totalWarnings += batchResult.summary.warnings;
+        totalErrors += batchResult.summary.errors;
+
+
+        // Add a small delay to prevent overwhelming the server
+        if (i < totalBatches - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+      } catch (error) {
+        console.error(`Error processing batch ${i + 1}:`, error);
+        // Continue with next batch even if one fails
+      }
+    }
+
+    // Create final aggregated result
+    const finalResult: ValidationResponse = {
+      success: true,
+      category: category,
+      results: allResults,
+      summary: {
+        total: data.length,
+        valid: totalValid,
+        warnings: totalWarnings,
+        errors: totalErrors
+      }
+    };
+
+    console.log('Batch validation completed:', finalResult);
+    setValidationResults(finalResult);
+    setValidationProgress({ current: totalBatches, total: totalBatches, percentage: 100 });
   };
 
   const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -346,22 +431,10 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
         {/* Horizontal Line */}
         <div className="mt-4 border-t border-gray-300"></div>
 
-        {/* File Upload Status */}
-        {uploadedFile && (
-          <div className="mt-4 flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <FileText className="w-5 h-5 text-blue-600" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-blue-900">{uploadedFile.name}</p>
-              <p className="text-xs text-blue-600">{fileData.length} rows • Uploaded {Math.floor(Math.random() * 5) + 1} min ago</p>
-            </div>
-            <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
-              Ready for Validation
-            </Badge>
-          </div>
-        )}
 
-        {/* Tabs and Validation Summary */}
-        <div className="mt-3 flex items-center justify-between">
+        {/* Single Line Layout: Tabs, File Info, and Validation Summary */}
+        <div className="mt-3 flex items-center justify-between gap-4">
+          {/* Left side: Tabs */}
           <div className="flex items-center gap-4">
             <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
               <button
@@ -388,7 +461,7 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
             
             {/* AI Helper message beside Field Instructions tab */}
             {activeTab === 'instructions' && (
-              <div className="flex items-center gap-2 ml-4 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex items-center gap-2 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-md">
                 <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
                 <span className="text-xs text-blue-800">
                   Selected "{selectedDataCategory || 'Field Instructions'}" - Upload Excel for validation. AI ready.
@@ -396,9 +469,23 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
               </div>
             )}
           </div>
+
+          {/* Center: File Upload Status */}
+          {uploadedFile && (
+            <div className="flex items-center gap-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg flex-1 max-w-md">
+              <FileText className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-blue-900 truncate">{uploadedFile.name}</p>
+                <p className="text-xs text-blue-600">{fileData.length} rows • Uploaded {Math.floor(Math.random() * 5) + 1} min ago</p>
+              </div>
+              <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 flex-shrink-0">
+                Ready for Validation
+              </Badge>
+            </div>
+          )}
           
-          {/* Action Buttons - only show when on instructions tab, positioned on the right */}
-          {activeTab === 'instructions' && (
+          {/* Right side: Action Buttons or Validation Summary */}
+          {activeTab === 'instructions' ? (
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowAddForm(true)}
@@ -417,28 +504,28 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
                 Upload Excel
               </button>
             </div>
-          )}
-          
-          {/* Validation Summary - only show when on upload tab */}
-          {activeTab === 'upload' && validationResults && !isValidating && (
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">Total Records:</span>
-                <span className="font-semibold text-gray-900">{validationResults.summary.total}</span>
+          ) : (
+            /* Validation Summary - only show when on upload tab */
+            validationResults && !isValidating && (
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600">Total Records:</span>
+                  <span className="font-semibold text-gray-900">{validationResults.summary.total}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-green-600">Valid:</span>
+                  <span className="font-semibold text-green-600">{validationResults.summary.valid}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-yellow-600">Warnings:</span>
+                  <span className="font-semibold text-yellow-600">{validationResults.summary.warnings}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-red-600">Errors:</span>
+                  <span className="font-semibold text-red-600">{validationResults.summary.errors}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-green-600">Valid:</span>
-                <span className="font-semibold text-green-600">{validationResults.summary.valid}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-yellow-600">Warnings:</span>
-                <span className="font-semibold text-yellow-600">{validationResults.summary.warnings}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-red-600">Errors:</span>
-                <span className="font-semibold text-red-600">{validationResults.summary.errors}</span>
-              </div>
-            </div>
+            )
           )}
         </div>
       </div>
@@ -452,7 +539,19 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
               <LoadingAnimation message="Loading categories..." />
             ) : isValidating ? (
               /* Show validation loading state */
-              <LoadingAnimation message="Please wait the data is validating" />
+              <div className="flex flex-col items-center justify-center min-h-[400px]">
+                <p className="text-lg font-semibold text-gray-700 mb-4">Please wait the data is validating</p>
+                <div className="flex items-center justify-center gap-2 text-gray-500">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+                {isLargeDataset && (
+                  <div className="mt-4 text-sm text-gray-600">
+                    {validationProgress.current} of {validationProgress.total} batches completed
+                  </div>
+                )}
+              </div>
             ) : (
               /* AI Helper - Show in empty content area or when no validation results */
               (!uploadedFile || !validationResults) && (
@@ -466,7 +565,9 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
               )
             )}
             
-            {/* Validation Results */}
+
+
+            {/* Final Validation Results */}
             {validationResults && !isClearingOutput && !isValidating && (
               <div className={`space-y-2 transition-opacity duration-300 ${isClearingOutput ? 'opacity-0' : 'opacity-100'}`}>
                 {/* Filter and Actions */}
@@ -491,6 +592,11 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-gray-500">
                       Showing {validationResults.results.length} records
+                      {isLargeDataset && (
+                        <span className="ml-2 text-blue-600">
+                          (Processed in batches)
+                        </span>
+                      )}
                     </span>
                   </div>
                 </div>

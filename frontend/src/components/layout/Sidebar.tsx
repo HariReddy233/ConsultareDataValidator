@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { 
   Users, 
   Package, 
@@ -7,7 +7,9 @@ import {
   Loader2,
   User,
   LogOut,
-  Settings
+  Settings,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { DataCategory, SAPMainCategory } from '../../types';
 import { useSAPCategories } from '../../hooks/useSAPCategories';
@@ -34,6 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange, i
   const { categories, loading, error } = useSAPCategories();
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [expandedSettings, setExpandedSettings] = useState(false);
 
   // Convert SAP categories to the format expected by the component
   const menuItems = categories.map((category: SAPMainCategory) => ({
@@ -42,8 +45,18 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange, i
     icon: getCategoryIcon(category.MainCategoryName),
   }));
 
+  // Settings menu items
+  const settingsMenuItems = [
+    { id: 'profile', label: 'Profile Settings', icon: User },
+    { id: 'users', label: 'Users', icon: Users },
+    { id: 'roles-departments', label: 'Roles & Departments', icon: Database },
+    { id: 'authorization', label: 'Authorization', icon: Settings },
+  ];
+
+  const isSettingsSubmenuActive = settingsMenuItems.some(item => selectedCategory === item.id);
+
   return (
-    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 flex flex-col shadow-sm min-h-screen transition-all duration-300`}>
+    <div className={`${isCollapsed ? 'w-16' : 'w-80'} bg-white border-r border-gray-200 flex flex-col shadow-sm min-h-screen transition-all duration-300`}>
       {/* Header */}
       <div className="px-4 pt-4 pb-8 border-b border-gray-200">
         <div className="flex items-center justify-center">
@@ -90,12 +103,73 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange, i
                       isActive ? 'text-blue-700' : 'text-gray-500 group-hover:text-gray-700'
                     }`} />
                     {!isCollapsed && (
-                      <span className="text-sm font-medium truncate">{item.label}</span>
+                      <span className="text-sm font-medium">{item.label}</span>
                     )}
                   </button>
                 </li>
               );
             })}
+            
+            {/* Settings Menu */}
+            <li className="pt-2">
+              <div className="border-t border-gray-200 pt-2">
+                <button
+                  onClick={() => {
+                    setExpandedSettings(!expandedSettings);
+                  }}
+                  className={`w-full flex items-center px-3 py-2.5 rounded-md text-left transition-all duration-200 group ${
+                    isSettingsSubmenuActive
+                      ? 'bg-yellow-50 text-yellow-700 border-l-4 border-yellow-500'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                  title={isCollapsed ? 'Settings' : undefined}
+                >
+                  <Settings className={`w-4 h-4 ${isCollapsed ? 'mx-auto' : 'mr-3'} flex-shrink-0 ${
+                    isSettingsSubmenuActive ? 'text-yellow-700' : 'text-gray-500 group-hover:text-gray-700'
+                  }`} />
+                  {!isCollapsed && (
+                    <>
+                      <span className="text-sm font-medium">Settings</span>
+                      <div className="ml-auto">
+                        {expandedSettings ? (
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                        )}
+                      </div>
+                    </>
+                  )}
+                </button>
+                
+                {/* Settings Submenu */}
+                {!isCollapsed && expandedSettings && (
+                  <ul className="ml-4 mt-1 space-y-1">
+                    {settingsMenuItems.map((subItem) => {
+                      const SubIcon = subItem.icon;
+                      const isSubActive = selectedCategory === subItem.id;
+                      
+                      return (
+                        <li key={subItem.id}>
+                          <button
+                            onClick={() => onCategoryChange(subItem.id as DataCategory)}
+                            className={`w-full flex items-center px-3 py-2 rounded-md text-left transition-all duration-200 group ${
+                              isSubActive
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            }`}
+                          >
+                            <SubIcon className={`w-3 h-3 mr-3 flex-shrink-0 ${
+                              isSubActive ? 'text-yellow-700' : 'text-gray-400 group-hover:text-gray-600'
+                            }`} />
+                            <span className="text-xs font-medium">{subItem.label}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </li>
           </ul>
         )}
       </nav>
@@ -115,10 +189,10 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange, i
                 </div>
                 {!isCollapsed && (
                   <div className="flex-1 text-left">
-                    <div className="text-sm font-medium text-gray-900 truncate">
+                    <div className="text-sm font-medium text-gray-900">
                       {user.user_name}
                     </div>
-                    <div className="text-xs text-gray-500 truncate">
+                    <div className="text-xs text-gray-500">
                       {user.user_email}
                     </div>
                   </div>
@@ -148,16 +222,6 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange, i
                   <div className="text-sm font-medium text-gray-900">{user.user_name}</div>
                   <div className="text-xs text-gray-500">{user.user_role}</div>
                 </div>
-                <button
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    // TODO: Navigate to profile page
-                  }}
-                  className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Profile Settings
-                </button>
                 <button
                   onClick={() => {
                     setShowUserMenu(false);

@@ -140,4 +140,71 @@ export const api = {
     }
     return response.json();
   },
+
+  // Generic HTTP methods for user management and other APIs
+  get: async (url: string): Promise<any> => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch data');
+    }
+    return response.json();
+  },
+
+  post: async (url: string, data?: any): Promise<any> => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to create data');
+    }
+    return response.json();
+  },
+
+  put: async (url: string, data?: any): Promise<any> => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to update data');
+    }
+    return response.json();
+  },
+
+  delete: async (url: string): Promise<any> => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to delete data');
+    }
+    return response.json();
+  },
 };

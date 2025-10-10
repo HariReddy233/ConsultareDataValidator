@@ -45,11 +45,11 @@ export const API_ENDPOINTS = {
 } as const;
 
 // Request timeout
-export const REQUEST_TIMEOUT = 30000; // 30 seconds
+export const REQUEST_TIMEOUT = 120000; // 2 minutes for large datasets
 
 // File upload limits
 export const FILE_UPLOAD = {
-  MAX_SIZE: 10 * 1024 * 1024, // 10MB
+  MAX_SIZE: 50 * 1024 * 1024, // 50MB
   ALLOWED_TYPES: [
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
     'application/vnd.ms-excel', // .xls

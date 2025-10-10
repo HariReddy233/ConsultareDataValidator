@@ -130,8 +130,28 @@ const checkPermission = (moduleName, permission) => {
   };
 };
 
-// Middleware to check if user is admin
-const requireAdmin = authorize('admin');
+// Middleware to check if user is admin (check for admin role or system administrator)
+const requireAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json(
+      generateResponse(false, 'Access denied. User not authenticated.', 401, null)
+    );
+  }
+
+  // Check if user has admin privileges (admin role or system administrator)
+  const adminRoles = ['admin', 'system_administrator', 'System Administrator'];
+  console.log('User role:', req.user.user_role);
+  console.log('Admin roles:', adminRoles);
+  console.log('Has admin role:', adminRoles.includes(req.user.user_role));
+  
+  if (!adminRoles.includes(req.user.user_role)) {
+    return res.status(403).json(
+      generateResponse(false, 'Access denied. Admin privileges required.', 403, null)
+    );
+  }
+
+  next();
+};
 
 // Middleware to check if user can read data validation module
 const canReadValidation = checkPermission('data_validation', 'can_read');

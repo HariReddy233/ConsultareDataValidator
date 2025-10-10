@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import MainContent from './components/layout/MainContent';
+import SettingsContent from './components/layout/SettingsContent';
 import { ValidationProvider } from './contexts/ValidationContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -40,6 +41,9 @@ function AppContent() {
     );
   }
 
+  // Check if the selected category is a settings category
+  const isSettingsCategory = ['profile', 'users', 'roles-departments', 'authorization'].includes(selectedCategory);
+
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar 
@@ -48,7 +52,14 @@ function AppContent() {
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
-      <MainContent category={selectedCategory} />
+      {isSettingsCategory ? (
+        <SettingsContent 
+          selectedMenuItem={selectedCategory === 'settings' ? undefined : selectedCategory}
+          onMenuItemSelect={setSelectedCategory}
+        />
+      ) : (
+        <MainContent category={selectedCategory} />
+      )}
     </div>
   );
 }

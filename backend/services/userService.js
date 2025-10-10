@@ -54,7 +54,44 @@ class UserService {
       try {
         const query = 'SELECT * FROM users WHERE user_id = $1';
         const result = await client.query(query, [userId]);
-        return result.rows.length > 0 ? result.rows[0] : null;
+        
+        if (result.rows.length === 0) {
+          return null;
+        }
+
+        const user = result.rows[0];
+
+        // Get role and department names for display
+        let roleName = user.user_role;
+        let departmentName = user.user_department;
+        
+        try {
+          if (user.user_role) {
+            const role = await this.getRoleById(user.user_role);
+            if (role) {
+              roleName = role.role_name;
+            }
+          }
+          
+          if (user.user_department) {
+            const department = await this.getDepartmentById(user.user_department);
+            if (department) {
+              departmentName = department.department_name;
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching role/department names in findUserById:', error);
+          // Continue with IDs if names can't be fetched
+        }
+
+        // Add role and department names to user object
+        const userWithNames = {
+          ...user,
+          role_name: roleName,
+          department_name: departmentName
+        };
+
+        return userWithNames;
       } catch (error) {
         console.error('Database error in findUserById:', error);
         throw new Error(`Database error: ${error.message}`);
@@ -66,21 +103,46 @@ class UserService {
   async addUser(userData) {
     return withClient(async (client) => {
       try {
+        // Validate that password is hashed (starts with $2b$)
+        if (userData.user_password && !userData.user_password.startsWith('$2b$')) {
+          console.error('SECURITY ERROR: Attempted to insert user with plain text password!');
+          console.error('User data:', {
+            user_id: userData.user_id,
+            user_email: userData.user_email,
+            password_preview: userData.user_password.substring(0, 10) + '...'
+          });
+          throw new Error('SECURITY ERROR: Password must be hashed before storing in database');
+        }
+
         const columns = Object.keys(userData);
         const values = Object.values(userData);
 
+        console.log('Inserting user with columns:', columns);
+        console.log('Inserting user with values:', values.map((v, i) => `${columns[i]}: ${typeof v === 'string' ? v.substring(0, 20) + '...' : v}`));
+
         const insertQuery = `INSERT INTO users (${columns.join(', ')}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`;
+        
+        console.log('Executing query:', insertQuery);
         
         const result = await client.query(insertQuery, values);
         
+        console.log('User inserted successfully, rows:', result.rows.length);
+        
         if (result.rows.length > 0) {
           // Create default permissions for the user
+          console.log('Creating default permissions for user:', userData.user_id);
           await this.createDefaultPermissions(client, userData.user_id);
         }
         
         return result;
       } catch (error) {
         console.error('Database error in addUser:', error);
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          detail: error.detail,
+          constraint: error.constraint
+        });
         throw new Error(`Database error: ${error.message}`);
       }
     });
@@ -142,8 +204,40 @@ class UserService {
         if (result.rows.length === 0) {
           throw new Error('User not found');
         }
+
+        const user = result.rows[0];
+
+        // Get role and department names for display
+        let roleName = user.user_role;
+        let departmentName = user.user_department;
         
-        return result;
+        try {
+          if (user.user_role) {
+            const role = await this.getRoleById(user.user_role);
+            if (role) {
+              roleName = role.role_name;
+            }
+          }
+          
+          if (user.user_department) {
+            const department = await this.getDepartmentById(user.user_department);
+            if (department) {
+              departmentName = department.department_name;
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching role/department names in updateUser:', error);
+          // Continue with IDs if names can't be fetched
+        }
+
+        // Add role and department names to user object
+        const userWithNames = {
+          ...user,
+          role_name: roleName,
+          department_name: departmentName
+        };
+
+        return { rows: [userWithNames] };
       } catch (error) {
         console.error('Database error in updateUser:', error);
         throw new Error(`Database error: ${error.message}`);
@@ -204,14 +298,17 @@ class UserService {
         const countResult = await client.query(countQuery, queryParams);
         const totalCount = parseInt(countResult.rows[0].count);
 
-        // Get users
+        // Get users with role and department names
         paramCount++;
         const usersQuery = `
-          SELECT user_id, user_name, user_email, user_role, user_department, 
-                 user_phone_number, is_active, created_at, last_login
-          FROM users 
+          SELECT u.user_id, u.user_name, u.user_email, u.user_role, u.user_department, 
+                 u.user_phone_number, u.is_active, u.created_at, u.last_login,
+                 r.role_name, d.department_name
+          FROM users u
+          LEFT JOIN roles r ON u.user_role = r.role_id
+          LEFT JOIN departments d ON u.user_department = d.department_id
           WHERE 1=1 ${whereClause}
-          ORDER BY created_at DESC
+          ORDER BY u.created_at DESC
           LIMIT $${paramCount} OFFSET $${paramCount + 1}
         `;
         queryParams.push(limit, offset);
@@ -228,6 +325,51 @@ class UserService {
       } catch (error) {
         console.error('Database error in getAllUsers:', error);
         throw new Error(`Database error: ${error.message}`);
+      }
+    });
+  }
+
+  // Get role by ID
+  async getRoleById(roleId) {
+    return withClient(async (client) => {
+      try {
+        const query = 'SELECT * FROM roles WHERE role_id = $1';
+        const result = await client.query(query, [roleId]);
+        return result.rows.length > 0 ? result.rows[0] : null;
+      } catch (error) {
+        console.error('Database error in getRoleById:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+    });
+  }
+
+  // Get department by ID
+  async getDepartmentById(departmentId) {
+    return withClient(async (client) => {
+      try {
+        const query = 'SELECT * FROM departments WHERE department_id = $1';
+        const result = await client.query(query, [departmentId]);
+        return result.rows.length > 0 ? result.rows[0] : null;
+      } catch (error) {
+        console.error('Database error in getDepartmentById:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+    });
+  }
+
+  // Test database connection
+  async testConnection() {
+    return withClient(async (client) => {
+      try {
+        const result = await client.query('SELECT COUNT(*) as user_count FROM users');
+        console.log('Database connection test successful. User count:', result.rows[0].user_count);
+        return {
+          connected: true,
+          userCount: parseInt(result.rows[0].user_count)
+        };
+      } catch (error) {
+        console.error('Database connection test failed:', error);
+        throw new Error(`Database connection failed: ${error.message}`);
       }
     });
   }
@@ -336,6 +478,140 @@ class UserService {
         return result.rows;
       } catch (error) {
         console.error('Database error in getModules:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+    });
+  }
+
+  // Create new role
+  async createRole(roleData) {
+    return withClient(async (client) => {
+      try {
+        const { role_name, role_description } = roleData;
+        // Generate simple role code from role name (lowercase, replace spaces with underscores)
+        const role_id = role_name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+
+        const query = `
+          INSERT INTO roles (role_id, role_name, role_description) 
+          VALUES ($1, $2, $3) 
+          RETURNING *
+        `;
+        const result = await client.query(query, [role_id, role_name, role_description]);
+        return result.rows[0];
+      } catch (error) {
+        console.error('Database error in createRole:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+    });
+  }
+
+  // Update role
+  async updateRole(roleId, updateData) {
+    return withClient(async (client) => {
+      try {
+        const { role_name, role_description } = updateData;
+        
+        const query = `
+          UPDATE roles 
+          SET role_name = $1, role_description = $2, updated_at = CURRENT_TIMESTAMP 
+          WHERE role_id = $3 
+          RETURNING *
+        `;
+        const result = await client.query(query, [role_name, role_description, roleId]);
+        
+        if (result.rows.length === 0) {
+          throw new Error('Role not found');
+        }
+        
+        return result.rows[0];
+      } catch (error) {
+        console.error('Database error in updateRole:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+    });
+  }
+
+  // Delete role
+  async deleteRole(roleId) {
+    return withClient(async (client) => {
+      try {
+        const query = 'DELETE FROM roles WHERE role_id = $1';
+        const result = await client.query(query, [roleId]);
+        
+        if (result.rowCount === 0) {
+          throw new Error('Role not found');
+        }
+        
+        return { message: 'Role deleted successfully' };
+      } catch (error) {
+        console.error('Database error in deleteRole:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+    });
+  }
+
+  // Create new department
+  async createDepartment(departmentData) {
+    return withClient(async (client) => {
+      try {
+        const { department_name, department_description } = departmentData;
+        // Generate simple department code from department name (lowercase, replace spaces with underscores)
+        const department_id = department_name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+
+        const query = `
+          INSERT INTO departments (department_id, department_name, department_description)
+          VALUES ($1, $2, $3)
+          RETURNING *
+        `;
+        const result = await client.query(query, [department_id, department_name, department_description]);
+        return result.rows[0];
+      } catch (error) {
+        console.error('Database error in createDepartment:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+    });
+  }
+
+  // Update department
+  async updateDepartment(departmentId, updateData) {
+    return withClient(async (client) => {
+      try {
+        const { department_name, department_description } = updateData;
+        
+        const query = `
+          UPDATE departments 
+          SET department_name = $1, department_description = $2, updated_at = CURRENT_TIMESTAMP 
+          WHERE department_id = $3 
+          RETURNING *
+        `;
+        const result = await client.query(query, [department_name, department_description, departmentId]);
+        
+        if (result.rows.length === 0) {
+          throw new Error('Department not found');
+        }
+        
+        return result.rows[0];
+      } catch (error) {
+        console.error('Database error in updateDepartment:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+    });
+  }
+
+  // Delete department
+  async deleteDepartment(departmentId) {
+    return withClient(async (client) => {
+      try {
+        const query = 'DELETE FROM departments WHERE department_id = $1';
+        const result = await client.query(query, [departmentId]);
+        
+        if (result.rowCount === 0) {
+          throw new Error('Department not found');
+        }
+        
+        return { message: 'Department deleted successfully' };
+      } catch (error) {
+        console.error('Database error in deleteDepartment:', error);
         throw new Error(`Database error: ${error.message}`);
       }
     });

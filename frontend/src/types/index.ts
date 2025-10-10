@@ -127,3 +127,21 @@ export interface FileDownloadResponse {
   message?: string;
   filePath?: string;
 }
+
+// Settings menu types
+export interface SettingsMenuItem {
+  id: string;
+  label: string;
+  icon: React.ComponentType<any>;
+  hasSubmenu?: boolean;
+  submenuItems?: SettingsSubMenuItem[];
+}
+
+export interface SettingsSubMenuItem {
+  id: string;
+  label: string;
+  icon: React.ComponentType<any>;
+  path?: string;
+}
+
+export type SettingsCategory = 'settings';

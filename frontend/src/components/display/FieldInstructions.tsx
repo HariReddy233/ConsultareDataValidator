@@ -3,7 +3,7 @@ import { DataCategory, ValidationField } from '../../types';
 import { api } from '../../services/api';
 import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface FieldInstructionsProps {
   category: DataCategory;

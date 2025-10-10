@@ -5,12 +5,14 @@ interface User {
   user_id: string;
   user_name: string;
   user_email: string;
-  user_role: string;
-  user_department?: string;
+  user_role: string; // This will be the role ID
+  user_department?: string; // This will be the department ID
   user_phone_number?: string;
   is_active: boolean;
   created_at: string;
   last_login?: string;
+  role_name?: string; // This will be the role name for display
+  department_name?: string; // This will be the department name for display
 }
 
 interface Permission {
@@ -35,6 +37,7 @@ interface AuthContextType {
   logout: () => void;
   updateProfile: (userData: Partial<User>) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  refreshProfile: () => Promise<User | undefined>;
   hasPermission: (moduleName: string, permission: string) => boolean;
 }
 
@@ -95,12 +98,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             });
 
             if (!response.ok) {
-              // Token is invalid, clear auth state
-              clearAuthState();
+              if (response.status === 401) {
+                // Token is invalid, clear auth state
+                console.log('Token expired or invalid, clearing auth state');
+                clearAuthState();
+              } else {
+                // Other errors, keep auth state but log the issue
+                console.warn('Profile fetch failed with status:', response.status);
+              }
+            } else {
+              // Token is valid, update user data with fresh profile
+              const data = await response.json();
+              if (data.success && data.data) {
+                setUser(data.data);
+                localStorage.setItem('auth_user', JSON.stringify(data.data));
+              }
             }
           } catch (error) {
             console.error('Token verification failed:', error);
-            clearAuthState();
+            // Don't clear auth state on network errors, only on 401
+            console.warn('Network error during token verification, keeping auth state');
           }
         }
       } catch (error) {
@@ -268,6 +285,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const refreshProfile = async () => {
+    try {
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.PROFILE}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch profile');
+      }
+
+      if (data.success && data.data) {
+        setUser(data.data);
+        localStorage.setItem('auth_user', JSON.stringify(data.data));
+        return data.data;
+      }
+    } catch (error) {
+      console.error('Profile refresh error:', error);
+      throw error;
+    }
+  };
+
   const hasPermission = (moduleName: string, permission: string): boolean => {
     if (!permissions.length) return false;
     
@@ -288,6 +335,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     updateProfile,
     changePassword,
+    refreshProfile,
     hasPermission,
   };
 
