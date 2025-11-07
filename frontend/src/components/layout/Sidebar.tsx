@@ -32,26 +32,51 @@ const getCategoryIcon = (categoryName: string) => {
   return Database; // Default icon
 };
 
+// Map category names to module names for permission checking
+const getModuleNameFromCategory = (categoryName: string): string | null => {
+  const name = categoryName.toLowerCase();
+  if (name.includes('business partner') || name.includes('partner')) return 'Business Partner Master Data';
+  if (name.includes('item') || name.includes('product')) return 'Item Master Data';
+  if (name.includes('financial') || name.includes('accounting')) return 'Financial Data';
+  if (name.includes('setup') || name.includes('configuration')) return 'Set Up Data';
+  if (name.includes('asset')) return 'Asset Master Data';
+  return null; // No specific module mapping
+};
+
 const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange, isCollapsed = false, onToggleCollapse }) => {
   const { categories, loading, error } = useSAPCategories();
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [expandedSettings, setExpandedSettings] = useState(false);
 
   // Convert SAP categories to the format expected by the component
-  const menuItems = categories.map((category: SAPMainCategory) => ({
-    id: category.MainCategoryName.replace(/\s+/g, '') as DataCategory,
-    label: category.MainCategoryName,
-    icon: getCategoryIcon(category.MainCategoryName),
-  }));
+  const menuItems = categories
+    .map((category: SAPMainCategory) => ({
+      id: category.MainCategoryName.replace(/\s+/g, '') as DataCategory,
+      label: category.MainCategoryName,
+      icon: getCategoryIcon(category.MainCategoryName),
+      moduleName: getModuleNameFromCategory(category.MainCategoryName),
+    }));
+    // DISABLED: Permission filtering removed - show all modules
+    // .filter(item => {
+    //   // Filter based on READ permission for each module
+    //   if (!item.moduleName) return true; // Show if no specific module mapping
+    //   return hasPermission(item.moduleName, 'can_read');
+    // });
 
-  // Settings menu items
+  // Settings menu items - DISABLED: Permission filtering removed
   const settingsMenuItems = [
-    { id: 'profile', label: 'Profile Settings', icon: User },
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'roles-departments', label: 'Roles & Departments', icon: Database },
-    { id: 'authorization', label: 'Authorization', icon: Settings },
+    { id: 'profile', label: 'Profile Settings', icon: User, moduleName: null }, // Profile is always accessible
+    { id: 'users', label: 'Users', icon: Users, moduleName: 'Users' },
+    { id: 'roles-departments', label: 'Roles & Departments', icon: Database, moduleName: 'Roles & Departments' },
+    { id: 'authorization', label: 'Authorization', icon: Settings, moduleName: 'Authorization' },
   ];
+  // DISABLED: Permission filtering removed - show all settings items
+  // .filter(item => {
+  //   // Show profile always, others based on READ permission
+  //   if (item.moduleName === null) return true;
+  //   return hasPermission(item.moduleName, 'can_read');
+  // });
 
   const isSettingsSubmenuActive = settingsMenuItems.some(item => selectedCategory === item.id);
 
@@ -92,15 +117,15 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange, i
                 <li key={item.id}>
                   <button
                     onClick={() => onCategoryChange(item.id)}
-                    className={`w-full flex items-center px-3 py-2.5 rounded-md text-left transition-all duration-200 group ${
-                      isActive
-                        ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-500'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                  className={`w-full flex items-center px-3 py-2.5 rounded-md text-left transition-all duration-200 group ${
+                    isActive
+                      ? 'menu-item-active'
+                      : 'menu-item-inactive'
+                  }`}
                     title={isCollapsed ? item.label : undefined}
                   >
                     <Icon className={`w-4 h-4 ${isCollapsed ? 'mx-auto' : 'mr-3'} flex-shrink-0 ${
-                      isActive ? 'text-blue-700' : 'text-gray-500 group-hover:text-gray-700'
+                      isActive ? 'menu-item-active-icon' : 'menu-item-inactive-icon'
                     }`} />
                     {!isCollapsed && (
                       <span className="text-sm font-medium">{item.label}</span>
@@ -119,13 +144,13 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange, i
                   }}
                   className={`w-full flex items-center px-3 py-2.5 rounded-md text-left transition-all duration-200 group ${
                     isSettingsSubmenuActive
-                      ? 'bg-yellow-50 text-yellow-700 border-l-4 border-yellow-500'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'menu-item-active'
+                      : 'menu-item-inactive'
                   }`}
                   title={isCollapsed ? 'Settings' : undefined}
                 >
                   <Settings className={`w-4 h-4 ${isCollapsed ? 'mx-auto' : 'mr-3'} flex-shrink-0 ${
-                    isSettingsSubmenuActive ? 'text-yellow-700' : 'text-gray-500 group-hover:text-gray-700'
+                    isSettingsSubmenuActive ? 'menu-item-active-icon' : 'menu-item-inactive-icon'
                   }`} />
                   {!isCollapsed && (
                     <>
@@ -154,12 +179,12 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategoryChange, i
                             onClick={() => onCategoryChange(subItem.id as DataCategory)}
                             className={`w-full flex items-center px-3 py-2 rounded-md text-left transition-all duration-200 group ${
                               isSubActive
-                                ? 'bg-yellow-100 text-yellow-700'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                ? 'menu-subitem-active'
+                                : 'menu-subitem-inactive'
                             }`}
                           >
                             <SubIcon className={`w-3 h-3 mr-3 flex-shrink-0 ${
-                              isSubActive ? 'text-yellow-700' : 'text-gray-400 group-hover:text-gray-600'
+                              isSubActive ? 'menu-item-active-icon' : 'menu-item-inactive-icon'
                             }`} />
                             <span className="text-xs font-medium">{subItem.label}</span>
                           </button>

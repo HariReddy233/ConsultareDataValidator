@@ -4,6 +4,7 @@ import MainContent from './components/layout/MainContent';
 import SettingsContent from './components/layout/SettingsContent';
 import { ValidationProvider } from './contexts/ValidationContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DataCategory } from './types';
 import { useSAPCategories } from './hooks/useSAPCategories';
@@ -66,13 +67,15 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <ValidationProvider>
-        <ProtectedRoute>
-          <AppContent />
-        </ProtectedRoute>
-      </ValidationProvider>
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <ValidationProvider>
+          <ProtectedRoute>
+            <AppContent />
+          </ProtectedRoute>
+        </ValidationProvider>
+      </AuthProvider>
+    </ToastProvider>
   );
 }
 

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { DataCategory, ValidationResponse, SAPSubCategory, SAPMainCategory } from '../../types';
 import { api } from '../../services/api';
 import { useSAPCategories } from '../../hooks/useSAPCategories';
+import { useAuth } from '../../contexts/AuthContext';
 import ValidationResults from '../display/ValidationResults';
 import FieldInstructions from '../display/FieldInstructions';
 import AddFieldInstructionForm from '../forms/AddFieldInstructionForm';
@@ -41,18 +42,37 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { categories, downloadFile } = useSAPCategories();
+  const { hasPermission } = useAuth();
 
   // Load main categories on component mount
   useEffect(() => {
     const loadMainCategories = async () => {
       setLoadingMainCategories(true);
       try {
+        console.log('Loading main categories...');
         const response = await api.getMainCategories();
+        console.log('Main categories response:', response);
         if (response.success) {
           setMainCategories(response.data || []);
+          console.log('Set main categories:', response.data?.length || 0);
+        } else {
+          console.error('Failed to load main categories:', response);
         }
       } catch (error) {
         console.error('Error loading main categories:', error);
+        // Retry once after a short delay
+        setTimeout(async () => {
+          try {
+            console.log('Retrying main categories load...');
+            const retryResponse = await api.getMainCategories();
+            if (retryResponse.success) {
+              setMainCategories(retryResponse.data || []);
+              console.log('Retry successful, set main categories:', retryResponse.data?.length || 0);
+            }
+          } catch (retryError) {
+            console.error('Retry failed:', retryError);
+          }
+        }, 1000);
       } finally {
         setLoadingMainCategories(false);
       }
@@ -64,11 +84,18 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
   // Load subcategories when category changes
   useEffect(() => {
     const loadSubcategories = async () => {
-      if (!category) return;
+      if (!category) {
+        setSubcategories([]);
+        return;
+      }
       
       setLoadingSubcategories(true);
+      console.log('Loading subcategories for category:', category);
+      console.log('Available categories:', categories?.length || 0);
+      console.log('Available mainCategories:', mainCategories?.length || 0);
+      
       try {
-        // First try to find in the already loaded categories
+        // First try to find in the already loaded categories from useSAPCategories hook
         let mainCategory = categories?.find(cat => 
           cat.MainCategoryName.replace(/\s+/g, '') === category
         );
@@ -80,16 +107,42 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
           );
         }
         
-        if (mainCategory) {
+        console.log('Found mainCategory:', mainCategory?.MainCategoryName);
+        
+        if (mainCategory && mainCategory.SubCategories && mainCategory.SubCategories.length > 0) {
+          console.log('Setting subcategories from mainCategory:', mainCategory.SubCategories.length);
           setSubcategories(mainCategory.SubCategories);
         } else {
           // If still not found, try to fetch subcategories directly
+          console.log('Fetching subcategories directly for:', category);
           try {
             const response = await api.getSubcategoriesByMainCategoryName(category);
             if (response.success) {
+              console.log('Direct fetch successful:', response.data?.length || 0, 'subcategories');
               setSubcategories(response.data || []);
             } else {
-              setSubcategories([]);
+              console.log('Direct fetch failed:', response);
+              // Final fallback: try to get from the original categories API
+              try {
+                console.log('Trying fallback to original categories API...');
+                const fallbackResponse = await api.getSAPCategories();
+                if (fallbackResponse.success && fallbackResponse.data) {
+                  const fallbackCategory = fallbackResponse.data.find(cat => 
+                    cat.MainCategoryName.replace(/\s+/g, '') === category
+                  );
+                  if (fallbackCategory && fallbackCategory.SubCategories) {
+                    console.log('Fallback successful:', fallbackCategory.SubCategories.length, 'subcategories');
+                    setSubcategories(fallbackCategory.SubCategories);
+                  } else {
+                    setSubcategories([]);
+                  }
+                } else {
+                  setSubcategories([]);
+                }
+              } catch (fallbackError) {
+                console.error('Fallback also failed:', fallbackError);
+                setSubcategories([]);
+              }
             }
           } catch (fetchError) {
             console.error('Error fetching subcategories directly:', fetchError);
@@ -116,6 +169,25 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
       // Keep selectedDataCategory empty to show "Select Category" as default
     }
   }, [subcategories, hasInteractedWithDropdown, selectedDataCategory]);
+
+  // Switch to upload tab if instructions tab is active but no category is selected
+  useEffect(() => {
+    if (activeTab === 'instructions' && !selectedDataCategory) {
+      setActiveTab('upload');
+    }
+  }, [activeTab, selectedDataCategory]);
+
+  // Reset selectedDataCategory when main category changes
+  useEffect(() => {
+    setSelectedDataCategory('');
+    setSelectedSubCategory(null);
+    setActiveTab('upload');
+    setValidationResults(null);
+    setFileData([]);
+    setUploadedFile(null);
+    setHasInteractedWithDropdown(false);
+    setShowDropdownHighlight(false);
+  }, [category]);
 
   const getCategoryTitle = (category: DataCategory) => {
     // If main categories are still loading, show a loading state
@@ -150,6 +222,7 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
     // Return a generic description for all categories
     return '';
   };
+
 
   // Handle subcategory selection
   const handleSubCategoryChange = (subCategoryName: string) => {
@@ -394,8 +467,13 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
           {/* Action Buttons */}
           <div className="flex gap-3">
             <Button 
-              className="flex items-center gap-2 bg-sap-primary hover:bg-sap-primary/90 text-white px-4 py-2"
-              onClick={handleUploadClick}
+              className={`flex items-center gap-2 px-4 py-2 ${
+                selectedDataCategory
+                  ? 'bg-sap-primary hover:bg-sap-primary/90 text-white'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+              onClick={selectedDataCategory ? handleUploadClick : undefined}
+              disabled={!selectedDataCategory}
             >
               <Upload className="w-4 h-4" />
               Upload
@@ -409,18 +487,26 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
             />
             <Button 
               variant="outline" 
-              className="flex items-center gap-2 border-gray-300 hover:bg-gray-50 px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={handleDownloadTemplate}
-              disabled={!selectedSubCategory}
+              className={`flex items-center gap-2 px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                selectedDataCategory
+                  ? 'border-gray-300 hover:bg-gray-50'
+                  : 'border-gray-200 text-gray-400'
+              }`}
+              onClick={selectedDataCategory ? handleDownloadTemplate : undefined}
+              disabled={!selectedDataCategory || !selectedSubCategory}
             >
               <Download className="w-4 h-4" />
               Template
             </Button>
             <Button 
               variant="outline" 
-              className="flex items-center gap-2 bg-sap-success/10 text-sap-success border-sap-success/20 hover:bg-sap-success/20 px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={handleDownloadSample}
-              disabled={!selectedSubCategory}
+              className={`flex items-center gap-2 px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                selectedDataCategory
+                  ? 'bg-sap-success/10 text-sap-success border-sap-success/20 hover:bg-sap-success/20'
+                  : 'bg-gray-100 text-gray-400 border-gray-200'
+              }`}
+              onClick={selectedDataCategory ? handleDownloadSample : undefined}
+              disabled={!selectedDataCategory || !selectedSubCategory}
             >
               <FileText className="w-4 h-4" />
               Sample
@@ -448,9 +534,12 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
                 <span className="transition-all duration-300">{getTabName()}</span>
               </button>
               <button
-                onClick={() => setActiveTab('instructions')}
+                onClick={() => selectedDataCategory && setActiveTab('instructions')}
+                disabled={!selectedDataCategory}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  activeTab === 'instructions'
+                  !selectedDataCategory
+                    ? 'text-gray-400 cursor-not-allowed opacity-50'
+                    : activeTab === 'instructions'
                     ? 'bg-blue-900 text-white shadow-sm'
                     : 'text-gray-600 hover:bg-blue-800 hover:text-white'
                 }`}
@@ -462,9 +551,8 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
             {/* AI Helper message beside Field Instructions tab */}
             {activeTab === 'instructions' && (
               <div className="flex items-center gap-2 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-md">
-                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
                 <span className="text-xs text-blue-800">
-                  Selected "{selectedDataCategory || 'Field Instructions'}" - Upload Excel for validation. AI ready.
+                  Selected <span className="font-semibold text-blue-900 bg-blue-100 px-1.5 py-0.5 rounded">{selectedDataCategory || 'Field Instructions'}</span> - Upload Excel for validation. AI ready.
                 </span>
               </div>
             )}
@@ -486,24 +574,30 @@ const MainContent: React.FC<MainContentProps> = ({ category }) => {
           
           {/* Right side: Action Buttons or Validation Summary */}
           {activeTab === 'instructions' ? (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white text-gray-600 hover:bg-blue-800 hover:text-white border border-gray-300 hover:border-blue-800 flex items-center gap-2"
-              >
-                <Plus className="w-3 h-3" />
-                Add Row
-              </button>
-              <button
-                onClick={() => setShowExcelUpload(true)}
-                className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white text-gray-600 hover:bg-blue-800 hover:text-white border border-gray-300 hover:border-blue-800 flex items-center gap-2"
-              >
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-                Upload Excel
-              </button>
-            </div>
+            hasPermission('Field Instructions', 'can_create') ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white text-gray-600 hover:bg-blue-800 hover:text-white border border-gray-300 hover:border-blue-800 flex items-center gap-2"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add Row
+                </button>
+                <button
+                  onClick={() => setShowExcelUpload(true)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 ${
+                    selectedDataCategory 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 hover:border-blue-700' 
+                      : 'bg-white text-gray-600 hover:bg-blue-800 hover:text-white border border-gray-300 hover:border-blue-800'
+                  }`}
+                >
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d={selectedDataCategory ? "M3 3a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293 7.707a1 1 0 011.414 0L9 9.414V17a1 1 0 11-2 0V9.414l-1.293 1.293a1 1 0 01-1.414-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 010 1.414z" : "M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"} clipRule="evenodd" />
+                  </svg>
+                  Upload Excel
+                </button>
+              </div>
+            ) : null
           ) : (
             /* Validation Summary - only show when on upload tab */
             validationResults && !isValidating && (

@@ -28,7 +28,7 @@ A comprehensive full-stack application for validating business data using React,
 
 ## 📋 Data Categories
 
-1. **Business Partner Master Data**
+1. ****
    - Customer/Supplier information validation
    - Address and contact validation
    - Tax information validation

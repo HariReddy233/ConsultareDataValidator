@@ -3,7 +3,7 @@ import { DataCategory, ValidationField } from '../../types';
 import { api } from '../../services/api';
 import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { Loader2 } from 'lucide-react';
+import { Loader2, FileText } from 'lucide-react';
 
 interface FieldInstructionsProps {
   category: DataCategory;
@@ -131,12 +131,30 @@ const FieldInstructions: React.FC<FieldInstructionsProps> = ({ category, subcate
 
   return (
     <div className="space-y-6 h-full flex flex-col">
+      {/* Field Instructions Header */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <FileText className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Field Instructions</h2>
+            <p className="text-sm text-gray-600">
+              {fields.length > 0 
+                ? `Viewing ${fields.length} field instruction${fields.length === 1 ? '' : 's'}`
+                : 'No field instructions available'
+              }
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Field Instructions View */}
-      <Card className="overflow-hidden flex-1 flex flex-col">
+      <Card className="overflow-hidden flex-1 flex flex-col shadow-sm border-0 bg-white">
         <CardContent className="p-0 flex-1 flex flex-col">
           <div className="overflow-x-auto overflow-y-auto flex-1 max-h-[calc(100vh-300px)]">
             <table className="w-full min-w-max">
-              <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
                   {getFieldKeys().map((key) => (
                     <th key={key} className="text-left py-4 px-6 font-semibold text-gray-900 text-sm whitespace-nowrap">
@@ -145,9 +163,9 @@ const FieldInstructions: React.FC<FieldInstructionsProps> = ({ category, subcate
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-100">
                 {fields.map((field, index) => (
-                  <tr key={index} className="hover:bg-gray-50/50 transition-colors">
+                  <tr key={index} className="hover:bg-blue-50/30 transition-colors duration-200">
                     {getFieldKeys().map((key) => (
                       <td key={key} className="py-4 px-6 whitespace-nowrap">
                         {renderFieldValue(field, key)}

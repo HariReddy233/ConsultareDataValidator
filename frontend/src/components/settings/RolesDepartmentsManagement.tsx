@@ -10,6 +10,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { api } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Role {
   role_id: string;
@@ -323,13 +324,15 @@ const RolesTab: React.FC<RolesTabProps> = ({
             </div>
             <h2 className="text-lg font-semibold text-gray-900">System Roles</h2>
           </div>
-          <button
-            onClick={() => setShowAddRole(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add New Role
-          </button>
+          {true && (
+            <button
+              onClick={() => setShowAddRole(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add New Role
+            </button>
+          )}
         </div>
       </div>
 
@@ -454,20 +457,24 @@ const RolesTab: React.FC<RolesTabProps> = ({
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => onEdit(role)}
-                          className="text-orange-600 hover:text-orange-900 p-1 rounded"
-                          title="Edit role"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onDelete(role.role_id)}
-                          className="text-red-600 hover:text-red-900 p-1 rounded"
-                          title="Delete role"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {true && (
+                          <button
+                            onClick={() => onEdit(role)}
+                            className="text-orange-600 hover:text-orange-900 p-1 rounded"
+                            title="Edit role"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        )}
+                        {true && (
+                          <button
+                            onClick={() => onDelete(role.role_id)}
+                            className="text-red-600 hover:text-red-900 p-1 rounded"
+                            title="Delete role"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </td>
@@ -538,13 +545,15 @@ const DepartmentsTab: React.FC<DepartmentsTabProps> = ({
             </div>
             <h2 className="text-lg font-semibold text-gray-900">System Departments</h2>
           </div>
-          <button
-            onClick={() => setShowAddDepartment(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add New Department
-          </button>
+          {true && (
+            <button
+              onClick={() => setShowAddDepartment(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add New Department
+            </button>
+          )}
         </div>
       </div>
 
@@ -669,20 +678,24 @@ const DepartmentsTab: React.FC<DepartmentsTabProps> = ({
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => onEdit(department)}
-                          className="text-orange-600 hover:text-orange-900 p-1 rounded"
-                          title="Edit department"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onDelete(department.department_id)}
-                          className="text-red-600 hover:text-red-900 p-1 rounded"
-                          title="Delete department"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {true && (
+                          <button
+                            onClick={() => onEdit(department)}
+                            className="text-orange-600 hover:text-orange-900 p-1 rounded"
+                            title="Edit department"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        )}
+                        {true && (
+                          <button
+                            onClick={() => onDelete(department.department_id)}
+                            className="text-red-600 hover:text-red-900 p-1 rounded"
+                            title="Delete department"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </td>

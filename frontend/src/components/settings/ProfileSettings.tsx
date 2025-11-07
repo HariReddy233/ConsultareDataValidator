@@ -214,8 +214,8 @@ const ProfileSettings: React.FC = () => {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === tab.id
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:bg-white hover:text-gray-900'
+                    ? 'bg-blue-900 text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-blue-800 hover:text-white'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -411,7 +411,8 @@ const SecurityTab: React.FC<SecurityTabProps> = ({
   onSave
 }) => {
   return (
-    <div className="space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Change Password Form */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
@@ -423,7 +424,7 @@ const SecurityTab: React.FC<SecurityTabProps> = ({
           </div>
         </div>
 
-        <div className="space-y-4 max-w-md">
+        <div className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Current Password</label>
             <input
@@ -468,13 +469,49 @@ const SecurityTab: React.FC<SecurityTabProps> = ({
         </div>
       </div>
 
+      {/* Security Information */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Security Information</h3>
-        <div className="space-y-3 text-sm text-gray-600">
-          <p>• Your password should be at least 6 characters long</p>
-          <p>• Use a combination of letters, numbers, and symbols for better security</p>
-          <p>• Never share your password with anyone</p>
-          <p>• Change your password regularly for better security</p>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <Shield className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Security Information</h3>
+            <p className="text-sm text-gray-600">Important security guidelines and best practices</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-3 text-sm text-gray-600">
+            <div className="flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <p>Your password should be at least 6 characters long</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <p>Use a combination of letters, numbers, and symbols for better security</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <p>Never share your password with anyone</p>
+            </div>
+            {/* <div className="flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <p>Change your password regularly for better security</p>
+            </div> */}
+          </div>
+
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="text-sm font-medium text-blue-900 mb-1">Security Tips</h4>
+                <p className="text-xs text-blue-700">
+                  Always log out from shared computers.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

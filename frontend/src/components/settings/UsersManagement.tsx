@@ -13,6 +13,7 @@ import {
   Building
 } from 'lucide-react';
 import { api } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface UserData {
   user_id: string;
@@ -37,6 +38,7 @@ const UsersManagement: React.FC = () => {
   const [roles, setRoles] = useState<Array<{role_id: string; role_name: string}>>([]);
   const [departments, setDepartments] = useState<Array<{department_id: string; department_name: string}>>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const { hasPermission } = useAuth();
 
   // Load users data
   const loadUsers = async (page = 1, search = '') => {
@@ -162,13 +164,6 @@ const UsersManagement: React.FC = () => {
               <RefreshCw className="w-4 h-4" />
               Refresh
             </button>
-            <button
-              onClick={() => setShowAddUser(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Add User
-            </button>
           </div>
         </div>
         
@@ -193,10 +188,21 @@ const UsersManagement: React.FC = () => {
             </button>
           </form>
           
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-md transition-colors">
-            <Filter className="w-4 h-4" />
-            Filters
-          </button>
+          <div className="flex items-center gap-3">
+            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-md transition-colors">
+              <Filter className="w-4 h-4" />
+              Filters
+            </button>
+            {hasPermission('Users', 'can_create') && (
+              <button
+                onClick={() => setShowAddUser(true)}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors shadow-sm hover:shadow-md"
+              >
+                <Plus className="w-4 h-4" />
+                Add User
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -280,20 +286,24 @@ const UsersManagement: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => handleEditUser(user)}
-                            className="text-yellow-600 hover:text-yellow-900 p-1 rounded"
-                            title="Edit user"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(user.user_id)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded"
-                            title="Delete user"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {hasPermission('Users', 'can_create') && (
+                            <button
+                              onClick={() => handleEditUser(user)}
+                              className="text-yellow-600 hover:text-yellow-900 p-1 rounded"
+                              title="Edit user"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                          )}
+                          {hasPermission('Users', 'can_create') && (
+                            <button
+                              onClick={() => handleDeleteUser(user.user_id)}
+                              className="text-red-600 hover:text-red-900 p-1 rounded"
+                              title="Delete user"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global menu item styles for consistent theming */
+@layer components {
+  .menu-item-active {
+    @apply bg-blue-50 text-blue-700 border-l-4 border-blue-500;
+  }
+  
+  .menu-item-active-icon {
+    @apply text-blue-700;
+  }
+  
+  .menu-subitem-active {
+    @apply bg-blue-50 text-blue-700 border-l-4 border-blue-500;
+  }
+  
+  .menu-item-inactive {
+    @apply text-gray-700 hover:bg-gray-50 hover:text-gray-900;
+  }
+  
+  .menu-item-inactive-icon {
+    @apply text-gray-500 group-hover:text-gray-700;
+  }
+  
+  .menu-subitem-inactive {
+    @apply text-gray-600 hover:bg-gray-50 hover:text-gray-900;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

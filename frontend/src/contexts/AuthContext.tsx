@@ -316,12 +316,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const hasPermission = (moduleName: string, permission: string): boolean => {
-    if (!permissions.length) return false;
+    // DISABLED: Authorization functionality removed - always return true
+    return true;
     
-    const modulePermission = permissions.find(p => p.module_name === moduleName);
-    if (!modulePermission) return false;
-
-    return modulePermission[permission as keyof Permission] === true;
+    // Original permission checking code (disabled):
+    // if (!permissions.length) return false;
+    // const modulePermission = permissions.find(p => p.module_name === moduleName);
+    // if (!modulePermission) return false;
+    // return modulePermission[permission as keyof Permission] === true;
   };
 
   const value: AuthContextType = {
